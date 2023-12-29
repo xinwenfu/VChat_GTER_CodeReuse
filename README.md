@@ -2,7 +2,7 @@
 
 *Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/).
 ___
-As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter) the GTER buffer has limited space. This means we have to be creative when we are preforming any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that is already loaded in memory in order to allocate a Windows Shell, and create a remote connection to the attcker's machine creating a reverse shell that allows for arbitrary remote code execution.
+As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter) the GTER buffer has limited space. This means we have to be creative when we are preforming any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that is already loaded in memory in order to allocate a Windows Shell, and create a remote connection to the attacker's machine creating a reverse shell that allows for arbitrary remote code execution.
 
 
 ## Exploitation
@@ -57,13 +57,13 @@ The following sections cover the process that should (Or may) be followed when p
    * Exit with ```CTL+]```
    * An example is shown below
 
-		![Telent](Images/Telnet.png)
+		![Telnet](Images/Telnet.png)
 
 4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below
 
-	![Telent](Images/Telnet2.png)
+	![Telnet](Images/Telnet2.png)
 
-	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discused later in the exploitation section.
+	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discussed later in the exploitation section.
 ### Writing Shell Code
 This section covers the process used when writing the initial shellcode. 
 #### Windows API/System Calls 
@@ -297,7 +297,7 @@ BOOL CreateProcessA(
 * [`bInheritHandles`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20bInheritHandles): If set to true all inheritable handles will be inherited by the child process. Otherwise they will not be. 
 * [`dwCreationFlags`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20dwCreationFlags): Used to configure Process creation attributes such as priority through the [process-creation-flags](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags).
 * [`lpEnvironment`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpEnvironment): This is used to control the environment block of the spawned processes. If NULL it will inherit from the parent process.
-* [`lpCurrentDirectory`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpCurrentDirectory): Full path to the directory the preocess should have as the Current Working Directory (CWD), if NULL it will share the CWD of the parent process
+* [`lpCurrentDirectory`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpCurrentDirectory): Full path to the directory the process should have as the Current Working Directory (CWD), if NULL it will share the CWD of the parent process
 * [`lpStartupInfo`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D-,lpStartupInfo,-A%20pointer%20to): Pointer to [STARTUPINFOA](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa) structure.
 * [`lpProcessInformation`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bout%5D%20lpProcessInformation): Pointer to [PROCESS_INFORMATION](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information) structure. The function will write to the structure (pointer) we provide.
   
@@ -335,7 +335,7 @@ typedef struct _STARTUPINFOA {
 * [`dwYSize`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwYSize,-If%20dwFlags%20specifies): Height of window, if no GUI window is created this is ignored (NULL).
 * [`dwXCountChars`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwXCountChars,-If%20dwFlags%20specifies): Specifies the screen buffer width, if no GUI window is created this is ignored (NULL).
 * [`dwYCountChars`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=member%20is%20ignored.-,dwYCountChars,-If%20dwFlags%20specifies): Specifies the screen buffer height, if no GUI window is created this is ignored (NULL).
-* [`dwFillAttribute`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=member%20is%20ignored.-,dwFillAttribute,-If%20dwFlags%20specifies): Specifies the inital text and background colors, if no GUI window is created this is ignored (NULL).
+* [`dwFillAttribute`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=member%20is%20ignored.-,dwFillAttribute,-If%20dwFlags%20specifies): Specifies the initial text and background colors, if no GUI window is created this is ignored (NULL).
 * [`dwFlags`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=member%20is%20ignored.-,dwFillAttribute,-If%20dwFlags%20specifies): Specifies startup window parameters (Bitmask), used when a process makes a window.
 * [`wShowWindow`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=with%20STARTF_USEHOTKEY.-,wShowWindow,-If%20dwFlags%20specifies): Specifies the STARTF_USESHOWWINDOW parameter, can show any value from nCmdShow parameter of the [ShowWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow) function, otherwise it is ignored. (NULL)
 * [`cbReserved2`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=set%20to%20SW_SHOWDEFAULT.-,cbReserved2,-Reserved%20for%20use): Reserved must be zero (NULL)
@@ -491,7 +491,7 @@ call ebx                ; Call CreateProcessA()
  
 
 #### Arwin 
-This section will show you how we can get the adress of a function using [arwin](https://github.com/xinwenfu/arwin). It is unlikely you will have access to the target computer to run the [arwin](https://github.com/xinwenfu/arwin) program, and in those cases you would need to add to the shell code a section that calls [`getProcAddress(...)`](https://marcosvalle.github.io/re/exploit/2018/10/21/windows-manual-shellcode-part2.html#:~:text=Get%20WSASocketA%20with-,GetProcAddress,-This%20step%20is).
+This section will show you how we can get the address of a function using [arwin](https://github.com/xinwenfu/arwin). It is unlikely you will have access to the target computer to run the [arwin](https://github.com/xinwenfu/arwin) program, and in those cases you would need to add to the shell code a section that calls [`getProcAddress(...)`](https://marcosvalle.github.io/re/exploit/2018/10/21/windows-manual-shellcode-part2.html#:~:text=Get%20WSASocketA%20with-,GetProcAddress,-This%20step%20is).
 
 1) Open your Windows Virtual Machine
 
@@ -501,7 +501,7 @@ This section will show you how we can get the adress of a function using [arwin]
 
 	<img src="Images/I2.png" width=800>
 
-3) Check if [arwin](https://github.com/xinwenfu/arwin) is istalled.
+3) Check if [arwin](https://github.com/xinwenfu/arwin) is installed.
 
 	<img src="Images/I3.png" width=800>
 
@@ -561,7 +561,7 @@ We now need to make the complete shellcode we will compile.
 	done; 
 	echo
 	```
-	* `for i in`: For each value `$i` generated by the follwoing command 
+	* `for i in`: For each value `$i` generated by the following command 
 	* `objdump -d shellcode.o -M intel | grep "^ " | cut -f2`: Extracts the hex shellcode
 		* `objdump -d shellcode.o -M intel`: Dump the assembly of the object file compiled for Intel format
 		* `grep "^ "`: Extract only those lines containing assembly
@@ -572,7 +572,7 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I10.png" width=800>
 
-5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of out buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to preform a simple modification where we insted fill the start with our new shellcode. 
+5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of out buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to preform a simple modification where we instead fill the start with our new shellcode. 
 6) Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command
 	* `l`: Listen
@@ -613,7 +613,7 @@ We now need to make the complete shellcode we will compile.
 	<img src="Images/I17.png" width=800>
 	
 11) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py), notice that we added the hex for the push and pop instructions in order to move the stack pointer out of the way, and we decreased the number of `A`'s by two as each instruction we added is one byte. 
-	* *Note*: From the previous exploits it was possible to have the jump be a little imprecises, that is we could execute a few extra instructions without affecting the shellcode's execution. In this case you want to be sure that the jump preformed lands on the `push eax` instruction!
+	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise, that is we could execute a few extra instructions without affecting the shellcode's execution. In this case you want to be sure that the jump preformed lands on the `push eax` instruction!
 12) Run the program once more
 	* Now we can see the shell has been created!
 
@@ -622,7 +622,7 @@ We now need to make the complete shellcode we will compile.
 ## Conclusion
 For a discussion on why this overflow is possible, please refer to the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter).
 
-The main takeways from this is even when the buffer is limited, and if it is the only buffer it may be possible to reuse existing code in the target process to create a remote execution enviornment. There are more complex means and methods of acheving this, but hopefully this provides a intuative example of reusing code that the already exists!
+The main takeaways from this is even when the buffer is limited, and if it is the only buffer it may be possible to reuse existing code in the target process to create a remote execution environment. There are more complex means and methods of achieving this, but hopefully this provides a intuitive example of reusing code that the already exists!
 
 ## Test code
 1. [shellcode.asm](./SourceCode/shellcode.asm): Assembly shell code
