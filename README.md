@@ -1,4 +1,4 @@
- # GTER Exploit: Reusing Socket Stack \<Every byte counts\>
+ # VChat GTER Exploit: Reusing Code
 
 *Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/).
 ___
@@ -59,6 +59,11 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![Telent](Images/Telnet.png)
 
+4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below
+
+	![Telent](Images/Telnet2.png)
+
+	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discused later in the exploitation section.
 ### Writing Shell Code
 This section covers the process used when writing the initial shellcode. 
 #### Windows API/System Calls 
@@ -270,7 +275,7 @@ call ebx                ; Call connect()
 #### CreateProcessA
 The [`CreateProcessA(...)`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa) function is used in windows to [fork](https://man7.org/linux/man-pages/man2/fork.2.html) the current process and [execute](https://linux.die.net/man/3/execv) a new process in it's place. This is what we use to spawn a Windows command prompt or powershell windows and pipe set it's file descriptors (stdin, stdout stderr) to read from, or write to the Socket we have created. 
 
-The function signiture of `CreateProcessA(...)` is shown below:
+The function signature of `CreateProcessA(...)` is shown below:
 ```c
 BOOL CreateProcessA(
   [in, optional]      LPCSTR                lpApplicationName,
