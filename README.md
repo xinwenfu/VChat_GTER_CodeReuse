@@ -61,20 +61,19 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![Telnet](Images/Telnet.png)
 
-4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below.
+4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below. For more information on the GTER command's overflow please refer to the [previous document](https://github.com/DaintyJet/VChat_GTER_EggHunter).
 
 	![Telnet](Images/Telnet2.png)
 
-	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discussed later in the exploitation section.
 ### Writing Shell Code
-This section covers the process used when writing the initial shellcode we will use to create a socket connection and bind it to the input/output of a windows shell creating a reverse shell. 
+This section covers the process used when writing the initial shellcode we will use to create a socket connection and bind it to the input/output of a Windows shell creating a reverse shell. 
 #### Windows API/System Calls 
 Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions of an operating system may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also), this is also done in [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This means, if we are able to locate where in memory theses library functions are loaded, we can inject the arguments necessary to make a call onto the stack and jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to preform the systemcalls in the shellcode. 
 
 
 The shellcode we could write, or in our case generate with `msfvenom` often contains calls to a few notable *API* functions. 
 #### WSAStartup
-The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *windows* function provided in the the `winsock.h` header file, which preforms a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
+The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *Windows* function provided in the the `winsock.h` header file, which preforms a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
 
 
 The following is the `WSAStartup(...)` function's signature.
@@ -93,7 +92,7 @@ Luckily for us, since we are exploiting a Vulnerable By Design (VBD) *web* serve
 
 
 #### WSASocketA
-Although the windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally preform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementations of the socket interface. In this case we will use the `WSASocketA(...)` function call.
+Although the Windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally preform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementations of the socket interface. In this case we will use the `WSASocketA(...)` function call.
 
 The `WSASocketA(...)` function is used to create a [socket](https://docs.oracle.com/javase/tutorial/networking/sockets/definition.html) bound to a specific port on the host machine that is used to communicate in a 2-way fashion over a transport layer protocol that we define at the time of the socket's creation. When calling this function we must know it's function signature in order to not only place the correct arguments on the stack (As we do in a x86 architecture) but to also place them onto the stack in the correct order.
 
@@ -182,7 +181,7 @@ int WSAAPI connect(
 ```
 * [`s`](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect#:~:text=Parameters-,%5Bin%5D%20s,-A%20descriptor%20identifying): This argument specifies the socket descriptor for a socket that is to be used when making the connection. This specifies the source port.
 * [`name`](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect#:~:text=an%20unconnected%20socket.-,%5Bin%5D%20name,-A%20pointer%20to): This argument specifies a pointer to the [sockaddr](https://learn.microsoft.com/en-us/windows/win32/winsock/sockaddr-2) structure we use to specify the destination of this connection.
-* [`namelen`]:(https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect#:~:text=an%20unconnected%20socket.-,%5Bin%5D%20name,-A%20pointer%20to) This argument specifies the length of the `name` argument;  depending on the socket type, we may use a different `sockaddr` structure.
+* [`namelen`](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect#:~:text=an%20unconnected%20socket.-,%5Bin%5D%20name,-A%20pointer%20to): This argument specifies the length of the `name` argument;  depending on the socket type, we may use a different `sockaddr` structure.
 
 Below is the definition of the `sockaddr` structure for connections using IPv4:
 ```c
@@ -275,7 +274,7 @@ call ebx                ; Call connect()
 
 
 #### CreateProcessA
-The [`CreateProcessA(...)`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa) function is used in windows to [fork](https://man7.org/linux/man-pages/man2/fork.2.html) the current process and [execute](https://linux.die.net/man/3/execv) a new process in the forked process's place. This is what we use to spawn a Windows command prompt or powershell windows and a pipe to set it's file descriptors (stdin, stdout, and stderr) to read from, or write to the Socket we have created. 
+The [`CreateProcessA(...)`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa) function is used in Windows to [fork](https://man7.org/linux/man-pages/man2/fork.2.html) the current process and [execute](https://linux.die.net/man/3/execv) a new process in the forked process's place. This is what we use to spawn a Windows command prompt or powershell window and a pipe to set it's file descriptors (stdin, stdout, and stderr) to read from, or write to the Socket we have created. 
 
 The function signature of `CreateProcessA(...)` is shown below:
 ```c
@@ -329,7 +328,7 @@ typedef struct _STARTUPINFOA {
 ```
 * [`c`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=Members-,cb,-The%20size%20of): Size of the structure in bytes.
 * [`lpReserved`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=structure%2C%20in%20bytes.-,lpReserved,-Reserved%3B%20must%20be): Must be NULL (NULL).
-* [`lpDesktop`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=structure%2C%20in%20bytes.-,lpReserved,-Reserved%3B%20must%20be): Name of desktop or windows station for this process (NULL).
+* [`lpDesktop`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=structure%2C%20in%20bytes.-,lpReserved,-Reserved%3B%20must%20be): Name of desktop or Windows station for this process (NULL).
 * [`lpTitle`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=a%20Desktop.-,lpTitle,-For%20console%20processes): Name to be displayed in title bar; if NULL this is the executable's file name is used (NULL).
 * [`dwX`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=new%20console%20window.-,dwX,-If%20dwFlags%20specifies): Start position x, if no GUI window is created this should be NULL. 
 * [`dwY`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwY,-If%20dwFlags%20specifies): Start position y, if no GUI window is created this should be NULL. 
@@ -511,14 +510,14 @@ This section will show you how we can get the address of a function using [arwin
 
 4)  Find the `WSASockA(...)` Function: Run `arwin ws2_32 WSASocketA`, example output is shown below.
 	* `arwin`: The arwin binary
-	* `ws2_32`: Look for windows socket 2, 32 bit related functions
+	* `ws2_32`: Look for Windows socket 2, 32 bit related functions
 	* `WSASocketA`: Look for the WSASocketA function
 
 	<img src="Images/I4.png" width=800>
 
 5) Find the `connect(...)` Function: Run `arwin ws2_32 connect`, example output is shown below.
 	* `arwin`: The arwin binary
-	* `ws2_32`: Look for windows socket 2, 32 bit related functions
+	* `ws2_32`: Look for Windows socket 2, 32 bit related functions
 	* `connect`: Look for the connect function
 
 	<img src="Images/I5.png" width=800>
@@ -574,7 +573,7 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I10.png" width=800>
 
-5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of out buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to preform a simple modification where we instead fill the start with our new shellcode. 
+5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to preform a simple modification where we instead fill the start with our new shellcode. 
 6) Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
 	* `l`: Listen.
@@ -583,7 +582,7 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I11.png" width=800>
 
-7) Ensure vchat is launched, and attached to *immunity debugger*.
+7) Ensure vchat is launched, and attached to *Immunity Debugger*.
 
 	<img src="Images/I12.png" width=800>
 
@@ -593,12 +592,12 @@ We now need to make the complete shellcode we will compile.
 
 	* Notice that we did not get a shell, this means something likely went wrong...
 
-9) We can set a breakpoint at out jump esp command.
+9) We can set a breakpoint at our jump esp command.
 	* We can see the shellcode is being executed normally
 
 		<img src="Images/I14.png" width=800>
 
-	* However we can see that the function calls, and stack operations end up overwriting out shellcode, since the stack continues to get items pushed and popped on and off it.
+	* However we can see that the function calls, and stack operations end up overwriting our shellcode, since the stack continues to get items pushed and popped on and off it.
 
 		<img src="Images/I15.png" width=800>
 
