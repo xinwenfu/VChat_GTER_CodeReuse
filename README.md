@@ -1,18 +1,18 @@
  # VChat GTER Exploit: Reusing Code
 
-*Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/).
+*Notice*: The following exploit and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/).
 ___
-As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter) the GTER buffer has limited space. This means we have to be creative when we are preforming any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows Shell, and create a remote connection to the attacker's machine turning this into a reverse shell that allows for arbitrary remote code execution.
+As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means we have to be creative when we are performing any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows Shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution.
 
 
 ## Exploitation
-The following sections cover the process that should (Or may) be followed when preforming this exploitation on the VChat application. It should be noted, that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumption primarily that we have access to the binary that may not be realistic however the enumeration and exploitation of generic Windows, and Linux servers in order to procure this falls out of the scope of this document. 
+The following sections cover the process that should (Or may) be followed when performing this exploitation on the VChat application. It should be noted that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumptions primarily that we have access to the binary that may not be realistic; however, the enumeration and exploitation of generic Windows and Linux servers in order to procure this falls out of the scope of this document. 
 
-**Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)!
+**Notice**: Please set up the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)!
 
 ### PreExploitation
 1. **Windows**: Setup VChat
-   1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw.
+   1. Compile VChat and its dependencies if they have not already been compiled. This is done with mingw.
       1. Create the essfunc object File.
 		```powershell
 		# Compile Essfunc Object file 
@@ -20,7 +20,7 @@ The following sections cover the process that should (Or may) be followed when p
 		```
       2. Create the [DLL](https://learn.microsoft.com/en-us/troubleshoot/windows-client/deployment/dynamic-link-library) containing functions that will be used by the VChat.   
 		```powershell
-		# Create a the DLL with a static (preferred) base address of 0x62500000
+		# Create a DLL with a static (preferred) base address of 0x62500000
 		$ gcc.exe -shared -o essfunc.dll -Wl,--out-implib=libessfunc.a -Wl,--image-base=0x62500000 essfunc.o
 		```
          * ```-shared -o essfunc.dll```: We create a DLL "essfunc.dll", these are equivalent to the [shared library](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html) in Linux. 
@@ -43,7 +43,7 @@ The following sections cover the process that should (Or may) be followed when p
 	$ nmap -A <IP>
 	```
    * We can think of the "-A" flag like the term aggressive as it does more than the normal scans, and is often easily detected.
-   * This scan will also attempt to determine the version of the applications, this means when it encounters a non-standard application such as *VChat* it can take 30 seconds to 1.5 minuets depending on the speed of the systems involved to finish scanning. You may find the scan ```nmap <IP>``` without any flags to be quicker!
+   * This scan will also attempt to determine the version of the applications, this means when it encounters a non-standard application such as *VChat* it can take 30 seconds to 1.5 minutes depending on the speed of the systems involved to finish scanning. You may find the scan ```nmap <IP>``` without any flags to be quicker!
    * Example results are shown below:
 
 		![NMap](Images/Nmap.png)
@@ -61,19 +61,19 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![Telnet](Images/Telnet.png)
 
-4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below. For more information on the GTER command's overflow please refer to the [previous document](https://github.com/DaintyJet/VChat_GTER_EggHunter).
+4. **Linux**: We can try a few inputs to the *GTER* command and see if we can get any information. Simply type *GTER* followed by some additional input as shown below. For more information on the GTER command's overflow, please refer to the [previous document](https://github.com/DaintyJet/VChat_GTER_EggHunter).
 
 	![Telnet](Images/Telnet2.png)
 
 ### Writing Shell Code
 This section covers the process used when writing the initial shellcode we will use to create a socket connection and bind it to the input/output of a Windows shell creating a reverse shell. 
 #### Windows API/System Calls 
-Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions of an operating system may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also), this is also done in [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This means, if we are able to locate where in memory theses library functions are loaded, we can inject the arguments necessary to make a call onto the stack and jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to preform the systemcalls in the shellcode. 
+Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions of an operating system may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also), this is also done in [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This means that if we are able to locate where in memory these library functions are loaded, we can inject the arguments necessary to make a call onto the stack and jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to perform the system calls in the shellcode. 
 
 
-The shellcode we could write, or in our case generate with `msfvenom` often contains calls to a few notable *API* functions. 
+The shellcode we could write, or in our case generate with `msfvenom`, often contains calls to a few notable *API* functions. 
 #### WSAStartup
-The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *Windows* function provided in the the `winsock.h` header file, which preforms a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
+The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *Windows* function provided in the the `winsock.h` header file, which performs a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
 
 
 The following is the `WSAStartup(...)` function's signature.
@@ -92,7 +92,7 @@ Luckily for us, since we are exploiting a Vulnerable By Design (VBD) *web* serve
 
 
 #### WSASocketA
-Although the Windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally preform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementations of the socket interface. In this case we will use the `WSASocketA(...)` function call.
+Although the Windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally preform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementation of the socket interface. In this case we will use the `WSASocketA(...)` function call.
 
 The `WSASocketA(...)` function is used to create a [socket](https://docs.oracle.com/javase/tutorial/networking/sockets/definition.html) bound to a specific port on the host machine that is used to communicate in a 2-way fashion over a transport layer protocol that we define at the time of the socket's creation. When calling this function we must know it's function signature in order to not only place the correct arguments on the stack (As we do in a x86 architecture) but to also place them onto the stack in the correct order.
 
@@ -168,7 +168,7 @@ xchg eax,esi            ; Save the returned socket handle on ESI
 
 
 #### connect
-Although the Windows [connect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect) and [WSAConnect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaconnect) functions preform functionally the same tasks, their arguments and style of use are slightly different. The `connect(...)` function models the traditional Unix style of sockets, whereas the `WSAConnect(...)` is Microsoft's implementations of the socket interface. In this case we will use the Unix style API `connect(...)`.
+Although the Windows [connect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect) and [WSAConnect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaconnect) functions perform functionally the same tasks, their arguments and style of use are slightly different. The `connect(...)` function models the traditional Unix style of sockets, whereas the `WSAConnect(...)` is Microsoft's implementation of the socket interface. In this case we will use the Unix style API `connect(...)`.
 
 The `connect(...)` function is used by a process to [make a connection](https://learn.microsoft.com/en-us/windows/win32/winsock/connecting-to-a-socket) to a specified destination. 
 
@@ -295,7 +295,7 @@ BOOL CreateProcessA(
 * [`lpCommandLine`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20out%2C%20optional%5D%20lpCommandLine): This is the command to be executed, if this is null it uses the `lpApplicationName` parameter as a argument.
 * [`lpProcessAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpProcessAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL. 
 * [`lpThreadAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpThreadAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL. 
-* [`bInheritHandles`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20bInheritHandles): If set to true all inheritable handles will be inherited by the child process. Otherwise they will not be. 
+* [`bInheritHandles`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20bInheritHandles): If set to true all inheritable handles will be inherited by the child process. Otherwise, they will not be. 
 * [`dwCreationFlags`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20dwCreationFlags): Used to configure Process creation attributes such as priority through the [process-creation-flags](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags).
 * [`lpEnvironment`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpEnvironment): This is used to control the environment block of the spawned processes. If NULL it will inherit from the parent process.
 * [`lpCurrentDirectory`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpCurrentDirectory): Full path to the directory the process should have as the Current Working Directory (CWD), if NULL it will share the CWD of the parent process.
@@ -510,21 +510,21 @@ This section will show you how we can get the address of a function using [arwin
 
 4)  Find the `WSASockA(...)` Function: Run `arwin ws2_32 WSASocketA`, example output is shown below.
 	* `arwin`: The arwin binary
-	* `ws2_32`: Look for Windows socket 2, 32 bit related functions
+	* `ws2_32`: Look for Windows socket 2, 32-bit related functions
 	* `WSASocketA`: Look for the WSASocketA function
 
 	<img src="Images/I4.png" width=800>
 
 5) Find the `connect(...)` Function: Run `arwin ws2_32 connect`, example output is shown below.
 	* `arwin`: The arwin binary
-	* `ws2_32`: Look for Windows socket 2, 32 bit related functions
+	* `ws2_32`: Look for Windows socket 2, 32-bit related functions
 	* `connect`: Look for the connect function
 
 	<img src="Images/I5.png" width=800>
 
 6) Find the `CreateProcessA` Function: Run `arwin kernel32 CreateProcessA`, example output is shown below 
 	* `arwin`: The arwin binary
-	* `kernel32`: Look for kernel module, 32 bit related functions
+	* `kernel32`: Look for kernel module, 32-bit related functions
 	* `CreateProcessA`: Look for the CreateProcessA function
 
 	<img src="Images/I6.png" width=800>
@@ -562,7 +562,7 @@ We now need to make the complete shellcode we will compile.
 	done; 
 	echo
 	```
-	* `for i in`: For each value `$i` generated by the following command .
+	* `for i in`: For each value `$i` generated by the following command.
 	* `objdump -d shellcode.o -M intel | grep "^ " | cut -f2`: Extracts the hex shellcode.
 		* `objdump -d shellcode.o -M intel`: Dump the assembly of the object file compiled for Intel format.
 		* `grep "^ "`: Extract only those lines containing assembly.
@@ -573,7 +573,7 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I10.png" width=800>
 
-5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to preform a simple modification where we instead fill the start with our new shellcode. 
+5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to perform a simple modification where we instead fill the start with our new shellcode. 
 6) Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
 	* `l`: Listen.
@@ -582,11 +582,11 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I11.png" width=800>
 
-7) Ensure vchat is launched, and attached to *Immunity Debugger*.
+7) Ensure VChat is launched, and attached to *Immunity Debugger*.
 
 	<img src="Images/I12.png" width=800>
 
-8) Run the exploit against vchat and observe the output.
+8) Run the exploit against VChat and observe the output.
 
 	<img src="Images/I13.png" width=800>
 
@@ -623,7 +623,7 @@ We now need to make the complete shellcode we will compile.
 ## Conclusion
 For a discussion on why this overflow is possible, please refer to the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter).
 
-The main takeaways from this is even when the buffer is limited, and if it is the only buffer it may be possible to reuse existing code in the target process to create a remote execution environment. There are more complex means and methods of achieving this, but hopefully this provides a intuitive example of reusing code that the already exists!
+The main takeaway from this is even when the buffer is limited, if it is the only buffer, it may be possible to reuse existing code in the target process to create a remote execution environment. There are more complex means and methods of achieving this, but hopefully, this provides an intuitive example of reusing code that already exists!
 
 ## Test code
 1. [shellcode.asm](./SourceCode/shellcode.asm): Assembly shell code
