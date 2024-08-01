@@ -645,9 +645,9 @@ In this section we will discuss the effects a variety of defenses would have on 
 
 First we will examine the effects individual defenses have on this exploit, and then we will examine the effects a combination of these defenses would have on the VChat exploit.
 
-The mitigations we will be using in the following examination are:
+The mitigation we will be using in the following examination are:
 * [Buffer Security Check (GS)](https://github.com/DaintyJet/VChat_Security_Cookies): Security Cookies are inserted on the stack to detect when critical data such as the base pointer, return address or arguments have been overflowed. Integrity is checked on function return.
-* [Data Execution Prevention (DEP)](https://github.com/DaintyJet/VChat_DEP_Intro): Uses paged memeory protection to mark all non-code (.text) sections as non-executable. This prevents shellcode on the stack or heap from being executed as an exception will be raised.
+* [Data Execution Prevention (DEP)](https://github.com/DaintyJet/VChat_DEP_Intro): Uses paged memory protection to mark all non-code (.text) sections as non-executable. This prevents shellcode on the stack or heap from being executed as an exception will be raised.
 * [Address Space Layout Randomization (ASLR)](https://github.com/DaintyJet/VChat_ASLR_Intro): This mitigation makes it harder to locate where functions and datastructures are located as their region's starting address will be randomized. This is only done when the process is loaded, and if a DLL has ASLR enabled it will only have it's addresses randomized again when it is no longer in use and has been unloaded from memory.
 * [SafeSEH](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates that the exception handler we would like to execute is contained in a table generated at compile time. 
 * [SEHOP](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates the integrity of the SEH chain during a runtime check.
@@ -655,22 +655,35 @@ The mitigations we will be using in the following examination are:
 * [Heap Integrity Validation](https://github.com/DaintyJet/VChat_Heap_Defense): This mitigation verifies the integrity of a heap when operations are preformed on the heap itself, such as allocations or frees of heap objects.
 
 ### Individual Defenses: VChat Exploit 
-As this exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJet/VChat_GTER_EggHunter) exploit where we use shellcode we generated manually to decrease the space requirements rather than an egghunting shellcode generated with *mona.py* the mitigation have the same effect, however ASLR now partially mitigates the exploit.
+As this exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJet/VChat_GTER_EggHunter) exploit where we use shellcode we generated manually to decrease the space requirements rather than an egghunting shellcode generated with *mona.py* the mitigation have the same effect, however ASLR now partially mitigates the exploit due to the randomization of the addresses we need to reuse the external functions.
 
 |Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Space Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| 
 |-|-|-|-|-|-|-|
 |No Effect| | | |X|X|X| X|
 |Partial Mitigation| | |X| | | |
 |Full Mitigation|X|X| | | | | |
-
+* `Defense: Buffer Security Check (GS)`: This mitigation strategy proves effective against stack based buffer overflows that overwrite the return address or arguments of a function. This is because the randomly generated security cookie is placed before the return address and it's integrity is validated before the return address is loaded into the `EIP` register. As the security cookie is placed before the return address in order for us to overflow the return address we would have to corrupt the security cookie allowing us to detect the overflow.
+* `Defense: Data Execution Prevention (DEP)`: This mitigation strategy proves effective against stack based buffer overflows that attempt to **directly execute** shellcode located on the stack as this would raise an exception.
+* `Defense: Address Space Layout Randomization (ASLR)`: This is partially effective as the address of the external functions we call are randomized. However the randomization of the addresses is only guaranteed when the DLLs have been unloaded from memory which for these common libraries is only guaranteed when the system reboots. Meaning the addresses of the external functions we leverage  and reuse will be the same until we reboot.
+* `Defense: SafeSEH`: This does not affect our exploit as we do not leverage Structured Exception Handling.
+* `Defense: SEHOP`: This does not affect our exploit as we do not leverage Structured Exception Handling.
+* `Defense: Heap Integrity Validation`: This does not affect our exploit as we do not leverage the Windows Heap.
 > [!NOTE]
 > `Defense: Buffer Security Check (GS)`: If the application improperly initializes the global security cookie, or contains additional vulnerabilities that can leak values on the stack then this mitigation strategy can be bypassed.
 >
 > `Defense: Data Execution Prevention (DEP)`: If the attacker employs a [ROP Technique](https://github.com/DaintyJet/VChat_TRUN_ROP) then this defense can by bypassed.
 >
 > `Defense: Address Space Layout Randomization (ASLR)`: This defense can be bypassed if the attacker can leak addresses, or they may brute force the offsets of functions they are calling in the shellcode. This mitigation does not prevent the exploit, but simply makes it harder and less reliable.
+ ### Combined Defenses: VChat Exploit
+|Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| 
+|-|-|-|-|-|-|-|
+|Defense: Buffer Security Check (GS)|X|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**Increased Security**: ASLR increases the randomness of the generated security cookie. Additionally this makes it harder for attackers to reuse external functions loaded by the program.|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**No Increase**: The Windows Heap is not exploited.| | |
+|Defense: Data Execution Prevention (DEP)|**Increased Security**: Combining two effective mitigations provides the benefits of both.|X| **Increased Security**: Combining two effective mitigations provides the benefits of both.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The windows Heap is not exploited.| |
+|Defense: Address Space Layout Randomization (ASLR)|**Increased Security**: ASLR increases the randomness of the generated security cookie. Additionally this makes it harder for attackers to reuse external functions loaded by the program..|**Increased Security**: Combining two effective mitigations provides the benefits of both.|X|**No Increase**: The SEH feature is not exploited.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The Windows Heap is not exploited.|
 
 
+> [!NOTE] 
+> We omit repetitive rows that represent the non-effective mitigation strategies as their cases are already covered.
 ## Conclusion
 For a discussion on why this overflow is possible, please refer to the [previous exploit on Egghunters](https://github.com/DaintyJet/VChat_GTER_EggHunter).
 
