@@ -653,7 +653,6 @@ The mitigation we will be using in the following examination are:
 * [SEHOP](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates the integrity of the SEH chain during a runtime check.
 * [Control Flow Guard (CFG)](https://github.com/DaintyJet/VChat_CFG): This mitigation verifies that indirect calls or jumps are preformed to locations contained in a table generated at compile time. Examples of indirect calls or jumps include function pointers being used to call a function, or if you are using `C++` virtual functions would be considered indirect calls as you index a table of function pointers. 
 * [Heap Integrity Validation](https://github.com/DaintyJet/VChat_Heap_Defense): This mitigation verifies the integrity of a heap when operations are preformed on the heap itself, such as allocations or frees of heap objects.
-* [Control Flow Guard](https://github.com/DaintyJet/VChat_CFG): This mitigation verifies that the target of an indirect jump or call is a member of a whitelist generated at compile time.
 ### Individual Defenses: VChat Exploit 
 As this exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJet/VChat_GTER_EggHunter) exploit where we use shellcode we generated manually to decrease the space requirements rather than an egghunting shellcode generated with *mona.py* the mitigation have the same effect, however ASLR now partially mitigates the exploit due to the randomization of the addresses we need to reuse the external functions.
 
