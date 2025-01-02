@@ -5,7 +5,7 @@
 > - Don't copy the *$* sign when copying and pasting a command in this tutorial.
 > - Offsets may vary depending on what version of VChat was compiled, the version of the compiler used, and any compiler flags applied during the compilation process.
 ___
-As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means in those scenario, we have to be creative when performing any kind of buffer overflow to gain remote code execution (often leading to a shell). This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution. We do this to limit the total amount of space required to generate a shell since our custom shellcode will not have to locate or load any additional libraries.
+As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means, we have to be creative when performing any kind of buffer overflow to gain remote code execution (often leading to a shell) with the GTER command. This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution. We do this to limit the total amount of space required to generate a shell since our custom shellcode will not have to locate or load any additional libraries.
 
 > [!IMPORTANT]
 > Please set up the Windows and Linux systems as described in [SystemSetup](./SystemSetup/README.md)!
@@ -54,13 +54,13 @@ The following sections cover the process that should (Or may) be followed when p
 We want to understand the VChat program and how it works in order to exploit it effectively. Before diving into the specifics of how VChat behaves, the most important information for us is the IP address of the Windows VM that runs VChat and the port number that VChat runs on.
 
 1. **Windows** Launch the VChat application.
-   * Click on the Icon in File Explorer when it is in the same directory as the essfunc dll
-2. (Optional) **Linux**: Run NMap
+   * Click on the Icon in File Explorer when it is in the same directory as the essfunc dll.
+2. (Optional) **Linux**: Run NMap.
 	```sh
 	# Replace the <IP> with the IP of the machine.
 	$ nmap -A <IP>
 	```
-   * The "-A" flag can be considered aggressive because it does more than normal scans and is often easily detected.
+   * The `-A` flag can be considered aggressive because it does more than normal scans and is often easily detected.
    * This scan will also attempt to determine the version of the applications, which means when it encounters a non-standard application such as *VChat*, it can take 30 seconds to 1.5 minutes, depending on the speed of the systems involved, to finish scanning. You may find the scan ```nmap <IP>``` without any flags to be quicker!
    * Example results are shown below:
 
@@ -74,7 +74,7 @@ We want to understand the VChat program and how it works in order to exploit it 
 	# telnet 127.0.0.1 9999
 	```
    * Once you have connected, try running the ```HELP``` command. This will give us some information regarding the available commands the server processes and the arguments they take. This provides us with a starting point for our [*fuzzing*](https://owasp.org/www-community/Fuzzing) work.
-   * Exit with ```CTL+]```
+   * Exit with ```CTL+]```.
    * An example is shown below.
 
 		![Telnet](Images/Telnet.png)
@@ -85,11 +85,12 @@ We want to understand the VChat program and how it works in order to exploit it 
 
 ### Writing Shell Code
 This section covers the process used when writing the initial shellcode, which we will use to create a socket connection and bind it to the input/output of a Windows shell, creating a reverse shell.
+
 #### Windows API/System Calls
-Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions required by most applications may be exposed through [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also); this is done in all major operating systems, including [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) and Windows systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This is done to simplify their use, loading the arguments into the correct registers before the system call is made and the transition to kernel space is performed. This means that if we are able to locate where in memory these library functions are loaded, we can inject the necessary arguments onto the stack to make a call or jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to perform the system calls in the shellcode.
+Operating systems do not expose the underlying systems and functionality directly to user space applications. The necessary functions required by most applications may be exposed through various [systemcalls](https://learn.microsoft.com/en-us/cpp/c-runtime-library/system-calls?view=msvc-170#see-also); this is done in all major operating systems, including [Linux/Unix](https://man7.org/linux/man-pages/man2/syscalls.2.html) and Windows systems. In either case when writing programs we often do not interface directly with the system calls, we use wrapper functions or an **API** implemented in one of a language's libraries. This is done to simplify their use, especially when loading the arguments into the correct registers before the system call is made and the transition to kernel space is performed. This means that if we are able to locate where in memory these library functions are loaded, we can inject the necessary arguments onto the stack to make a call or jump to the address of the API function *reusing* code that already exists in memory. We can chain these function calls together in order to gain the same effect as a much larger payload that would normally include the necessary instructions to perform the system calls in the shellcode.
 
 
-The shellcode we could write, or in our case generate with `msfvenom`, often contains calls to a few notable *API* functions. These are some of these are listed below.
+The shellcode we could write, or in our case generate with `msfvenom`, often contains calls to a few notable *API* functions. Some of the commonly used functions are listed below.
 #### WSAStartup
 The [WSAStartup(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-wsastartup) is a *Windows* function provided in the the `winsock.h` header file, which performs a call to the [LoadLibraryA](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) function in order to load the Windows Socket module allowing for the use of Windows Socket APIs.
 
@@ -106,8 +107,6 @@ int WSAStartup(
 
 
 Luckily for us, since we are exploiting a Vulnerable By Design (VBD) *web* server it has most likely already called the `WSAStartup(...)` function and loaded the Windows Socket module into memory. This allows us to reduce the size of the shellcode to some degree.
-
-
 
 #### WSASocketA
 Although the Windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally perform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementation of the socket interface. In this case, we will use the `WSASocketA(...)` function call.
@@ -129,7 +128,7 @@ SOCKET WSAAPI WSASocketA(
 * [```af```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=Parameters-,%5Bin%5D%20af,-The%20address%20family): This argument specifies the address family of the socket.
 * [```type```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=and%20driver%20installed.-,%5Bin%5D%20type,-The%20type%20specification): This argument specifies the type of socket that it will be created. Will it support [TCP](https://www.cloudflare.com/learning/ddos/glossary/tcp-ip/), [UDP](https://www.cloudflare.com/learning/ddos/glossary/user-datagram-protocol-udp/) or some other kind of protocol.
 * [```protocol```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=and%20SOCK_STREAM.-,%5Bin%5D%20protocol,-The%20protocol%20to): This argument specifies the protocol that will be used and is specific to the `af` and `type` arguments passed.
-* [```lpProtocolInfo```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=Protocol%20is%20installed.-,%5Bin%5D%20lpProtocolInfo,-A%20pointer%20to): This argument is a pointer to the [WSAPROTOCOL_INFO](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/ns-winsock2-wsaprotocol_infoa) struct which provides characteristics of the socket to be created. 
+* [```lpProtocolInfo```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=Protocol%20is%20installed.-,%5Bin%5D%20lpProtocolInfo,-A%20pointer%20to): This argument is a pointer to the [WSAPROTOCOL_INFO](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/ns-winsock2-wsaprotocol_infoa) struct which provides characteristics of the socket to be created.
 * [```g```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=indicated%20WSAPROTOCOL_INFO%20structure.-,%5Bin%5D%20g,-An%20existing%20socket): This argument specifies the group a socket will belong to.
 * `[``dwFlags```](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa#:~:text=public%20header%20file.-,%5Bin%5D%20dwFlags,-A%20set%20of): This argument is used to specify any additional configurations through flags we set.
 
@@ -164,7 +163,7 @@ xchg eax,esi            ; Save the returned socket handle on ESI
    push ebx                ; Push 'g = NULL' parameter
    push ebx                ; Push 'lpProtocolInfo = NULL' parameter
    ```
-2) The `bl` register is one of the 8-bit registers in an x86 architecture. This sets the lower 8 bits of the `ebx` register. In this case, we will first set the `bl` register to the value six, which represents the IPPROTO_TCP protocol. Then, we push it onto the stack.
+2) The `bl` register is one of the 8-bit registers in an x86 architecture. This sets the lower 8 bits of the `ebx` register. In this case, we will first set the `bl` register to the value six, which represents the **IPPROTO_TCP** protocol. Then, we push it onto the stack.
    ```
    mov bl,0x6              ; Set bl register to 6 (Protocol: IPPROTO_TCP = 6)
    push ebx                ; Push 'protocol = 6' parameter
@@ -510,9 +509,8 @@ call ebx                ; Call CreateProcessA()
    ```
    * The address of the `connect(...)` function is found with [arwin](https://github.com/xinwenfu/arwin).
    * We will return to the stack, and we do not need to save the return value (It will return if it failed or not).
- 
 
-#### Arwin 
+#### Arwin
 This section will show you how we can get the address of a function using [arwin](https://github.com/xinwenfu/arwin). It is unlikely you will have access to the target computer to run the [arwin](https://github.com/xinwenfu/arwin) program in most scenarios, and in those cases you would need to add to the shell code a section that calls [`getProcAddress(...)`](https://marcosvalle.github.io/re/exploit/2018/10/21/windows-manual-shellcode-part2.html#:~:text=Get%20WSASocketA%20with-,GetProcAddress,-This%20step%20is). You could alternatively attempt to leak the PLT of the windows process.
 
 1) Open your Windows Virtual Machine.
@@ -621,7 +619,7 @@ now that we have generated the assembly for our shellcode, we will generate the 
 
 		<img src="Images/I15.png" width=800>
 
-	* Running the exploit with the breakpoint set, we can see that the EAX register holds the address of the buffer, if we place the stack pointer `eip` at this location it will no longer interfere with the shellcode. 
+	* Running the exploit with the breakpoint set, we can see that the EAX register holds the address of the buffer, if we place the stack pointer `eip` at this location it will no longer interfere with the shellcode.
 
 		<img src="Images/I16.png" width=800>
 
@@ -649,20 +647,20 @@ The mitigation we will be using in the following examination are:
 * [Buffer Security Check (GS)](https://github.com/DaintyJet/VChat_Security_Cookies): Security Cookies are inserted on the stack to detect when critical data such as the base pointer, return address or arguments have been overflowed. Integrity is checked on function return.
 * [Data Execution Prevention (DEP)](https://github.com/DaintyJet/VChat_DEP_Intro): Uses paged memory protection to mark all non-code (.text) sections as non-executable. This prevents shellcode on the stack or heap from being executed as an exception will be raised.
 * [Address Space Layout Randomization (ASLR)](https://github.com/DaintyJet/VChat_ASLR_Intro): This mitigation makes it harder to locate where functions and data structures are located as their region's starting address will be randomized. This is only done when the process is loaded, and if a DLL has ASLR enabled, it will only have its addresses randomized again when it is no longer in use and has been unloaded from memory.
-* [SafeSEH](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates that the exception handler we would like to execute is contained in a table generated at compile time. 
+* [SafeSEH](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates that the exception handler we would like to execute is contained in a table generated at compile time.
 * [SEHOP](https://github.com/DaintyJet/VChat_SEH): This is a protection for the Structured Exception Handing mechanism in Windows. It validates the integrity of the SEH chain during a runtime check.
-* [Control Flow Guard (CFG)](https://github.com/DaintyJet/VChat_CFG): This mitigation verifies that indirect calls or jumps are performed to locations contained in a table generated at compile time. Examples of indirect calls or jumps include function pointers being used to call a function, or if you are using `C++` virtual functions, which would be considered indirect calls as you index a table of function pointers. 
+* [Control Flow Guard (CFG)](https://github.com/DaintyJet/VChat_CFG): This mitigation verifies that indirect calls or jumps are performed to locations contained in a table generated at compile time. Examples of indirect calls or jumps include function pointers being used to call a function, or if you are using `C++` virtual functions, which would be considered indirect calls as you index a table of function pointers.
 * [Heap Integrity Validation](https://github.com/DaintyJet/VChat_Heap_Defense): This mitigation verifies the integrity of a heap when operations are performed on the heap itself, such as allocations or frees of heap objects.
-### Individual Defenses: VChat Exploit 
+### Individual Defenses: VChat Exploit
 This exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJet/VChat_GTER_EggHunter) exploit, where we use shellcode we generated manually to decrease the space requirements rather than egg hunting shellcode generated with *mona.py*. The mitigation has the same effect; however, ASLR now partially mitigates the exploit due to the randomization of the addresses, so we need to reuse the external functions.
 
-|Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Space Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| Defense: Control Flow Guard (CFG) | 
+|Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Space Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| Defense: Control Flow Guard (CFG) |
 |-|-|-|-|-|-|-|-|
 |No Effect| | | |X |X | X| X| X|
 |Partial Mitigation| | |X| | | | |
 |Full Mitigation|X| | | | | | | |
 ---
-|Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Space Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| Defense: Control Flow Guard (CFG) |  
+|Mitigation Level|Defense: Buffer Security Check (GS)|Defense: Data Execution Prevention (DEP)|Defense: Address Space Layout Randomization (ASLR) |Defense: SafeSEH| Defense: SEHOP | Defense: Heap Integrity Validation| Defense: Control Flow Guard (CFG) |
 |-|-|-|-|-|-|-|-|
 |No Effect| | |X |X |X | X| X| X|
 |Partial Mitigation| | |X| | | | |
@@ -679,7 +677,7 @@ This exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJ
 * `Defense: SafeSEH`: This does not affect our exploit as we do not leverage Structured Exception Handling.
 * `Defense: SEHOP`: This does not affect our exploit as we do not leverage Structured Exception Handling.
 * `Defense: Heap Integrity Validation`: This does not affect our exploit as we do not leverage the Windows Heap.
-* `Defense: Control Flow Guard`: This does not affect our exploit as we do not leverage indirect calls or jumps. 
+* `Defense: Control Flow Guard`: This does not affect our exploit as we do not leverage indirect calls or jumps.
 > [!NOTE]
 > `Defense: Buffer Security Check (GS)`: If the application improperly initializes the global security cookie or contains additional vulnerabilities that can leak values on the stack, then this mitigation strategy can be bypassed.
 >
@@ -691,10 +689,10 @@ This exploit is a variation of the [VChat EggHunting](https://github.com/DaintyJ
 |-|-|-|-|-|-|-|-|
 |Defense: Buffer Security Check (GS)|X|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**Increased Security**: ASLR increases the randomness of the generated security cookie. Additionally, this makes it harder for attackers to reuse external functions loaded by the program.|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**Increased Security**: Combining two effective mitigations provides the benefits of both.|**No Increase**: The Windows Heap is not exploited.|**No Increase**: Indirect Calls/Jumps are not exploited. | | |
 |Defense: Data Execution Prevention (DEP)|**Increased Security**: Combining two effective mitigations provides the benefits of both.|X| **Increased Security**: Combining two effective mitigations provides the benefits of both.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The windows Heap is not exploited.|**No Increase**: Indirect Calls/Jumps are not exploited. | |
-|Defense: Address Space Layout Randomization (ASLR)|**Increased Security**: ASLR increases the randomness of the generated security cookie. Additionally, this makes it harder for attackers to reuse external functions loaded by the program..|**Increased Security**: Combining two effective mitigations provides the benefits of both.|X|**No Increase**: The SEH feature is not exploited.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The Windows Heap is not exploited.|**No Increase**: Indirect Calls/Jumps are not exploited. | 
+|Defense: Address Space Layout Randomization (ASLR)|**Increased Security**: ASLR increases the randomness of the generated security cookie. Additionally, this makes it harder for attackers to reuse external functions loaded by the program..|**Increased Security**: Combining two effective mitigations provides the benefits of both.|X|**No Increase**: The SEH feature is not exploited.|**No Increase**: The SEH feature is not exploited.|**No Increase**: The Windows Heap is not exploited.|**No Increase**: Indirect Calls/Jumps are not exploited. |
 
 
-> [!NOTE] 
+> [!NOTE]
 > We omit repetitive rows representing the non-effective mitigation strategies as their cases are already covered.
 ## Conclusion
 For a discussion on why this overflow is possible, please refer to the [previous exploit on Egghunters](https://github.com/DaintyJet/VChat_GTER_EggHunter).
