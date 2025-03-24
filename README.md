@@ -624,21 +624,22 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 **Illustration of the stack before shellcode runs**
 ```
-|                      |<-- High Address 
+|                      |<-- High Address
+|----------------------|--- 
 |                      |
-| \xe9\x70\xff\xff\xff |
+| \xe9\x70\xff\xff\xff | 32B
 |----------------------|<-- ESP
 | Addr of jmp esp      | 
-|----------------------|
-| AA                   |
-|----------------------|
+|----------------------|----
+| AA                   | /\
+|----------------------|  
 | CUSTOM_SHELL         |
 | (126B)               |
-|----------------------|
+|----------------------| 144B
 | \x50\x5c             |
 | \x90\x90\x90\x90\x90 |
-| GTER /.:/            |
-|----------------------|
+| GTER /.:/            | \/
+|----------------------|----
 |                      |<-- Low Address
 ```
 
