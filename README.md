@@ -521,11 +521,7 @@ This section will show you how we can get the address of a function using [arwin
 
 1) Open your Windows Virtual Machine.
 
-	<img src="Images/I1.png" width=800>
-
 2) Open the command prompt.
-
-	<img src="Images/I2.png" width=800>
 
 3) Check if [arwin](https://github.com/xinwenfu/arwin) is installed.
 
@@ -538,21 +534,21 @@ This section will show you how we can get the address of a function using [arwin
 	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
 	* `WSASocketA`: Look for the WSASocketA function.
 
-	<img src="Images/I4.png" width=800>
+	<img src="Images/I4.png" width=640>
 
 5) Find the `connect(...)` Function: Run `arwin ws2_32 connect`, example output is shown below.
 	* `arwin`: The arwin binary.
 	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
 	* `connect`: Look for the connect function.
 
-	<img src="Images/I5.png" width=800>
+	<img src="Images/I5.png" width=640>
 
 6) Find the `CreateProcessA` Function: Run `arwin kernel32 CreateProcessA`, example output is shown below:
 	* `arwin`: The arwin binary.
 	* `kernel32`: Look for kernel module, specifically 32-bit related functions.
 	* `CreateProcessA`: Look for the CreateProcessA function.
 
-	<img src="Images/I6.png" width=800>
+	<img src="Images/I6.png" width=640>
 
 7) Replace the addresses we jump to in the shellcode!
 
