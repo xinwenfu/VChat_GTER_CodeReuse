@@ -588,7 +588,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 	* `echo`: Print an extra line.
 	* **Note**: If you create this file, be sure to make it executable with  the command `chmod +x extract.sh`, then you can run it using the command `./extract.sh`.
 
-	<img src="Images/I10.png" width=800>
+	<img src="Images/I10.png" width=640>
 
 4) Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
 5) Start netcat listening on port 4444, Run: `nc -lvp 4444`
@@ -597,30 +597,30 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 	* `v`: Verbose output.
 	* `p`: Port.
 
-	<img src="Images/I11.png" width=800>
+	<img src="Images/I11.png" width=640>
 
 6) Ensure that VChat is launched and attached to *Immunity Debugger*.
 
-	<img src="Images/I12.png" width=800>
+	<img src="Images/I12.png" width=640>
 
 7) Run the exploit against VChat and observe the output.
 
-	<img src="Images/I13.png" width=800>
+	<img src="Images/I13.png" width=640>
 
 	* Notice that we did not get a shell; this means something likely went wrong...
 
 8) We can set a breakpoint at our jump esp command.
 	* We can see the shellcode is being executed normally
 
-		<img src="Images/I14.png" width=800>
+		<img src="Images/I14.png" width=640>
 
 	* However we can see that the function calls, and stack operations end up overwriting our shellcode, since the stack continues to get items pushed and popped on and off it.
 
-		<img src="Images/I15.png" width=800>
+		<img src="Images/I15.png" width=640>
 
 	* Running the exploit with the breakpoint set, we can see that the EAX register holds the address of the buffer, if we place the stack pointer `eip` at this location it will no longer interfere with the shellcode.
 
-		<img src="Images/I16.png" width=800>
+		<img src="Images/I16.png" width=640>
 
 9) Generate the assembly we can use to modify our shellcode; We will be using the tool `/usr/share/metasploit-framework/tools/exploit/nasm_shell.rb`
 	* Run the command `./usr/share/metasploit-framework/tools/exploit/nasm_shell.rb`.
@@ -628,14 +628,14 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 	* Enter `pop esp` and save the output.
 	* Exit with `Ctl+D`.
 
-	<img src="Images/I17.png" width=800>
+	<img src="Images/I17.png" width=640>
 
 10) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise. That is we could execute a few extra NOP instructions without affecting the shellcode's execution. In this case, you want to be sure that the jump performed lands on the `push eax` instruction, or if you include an NOP sled, it should fall within that region!
 11) Run the program once more.
 	* Now we can see the shell has been created!
 
-	<img src="Images/I18.png" width=800>
+	<img src="Images/I18.png" width=640>
 
 ## Attack Mitigation Table
 In this section, we will discuss the effects a variety of defenses would have on *this specific attack* on the VChat server; specifically we will be discussing their effects on a buffer overflow that directly overwrites a return address and attempts to execute shellcode that has been written to the stack in order to launch a cmd shell and bind it's input and output to a network socket reusing already loaded libraries. It should be noted that these mitigations may be bypassed.
