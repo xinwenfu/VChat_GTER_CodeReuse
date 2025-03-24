@@ -557,7 +557,7 @@ This section will show you how we can get the address of a function using [arwin
 7) Replace the addresses we jump to in the shellcode!
 
 ### Exploitation
-now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
+Now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
 
 1) Open a new asm file in the Kali machine. This can be named `shellcode.asm`, and you can open it using mousepad.
 2) Add the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
