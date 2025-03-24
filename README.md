@@ -632,6 +632,24 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 10) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise. That is we could execute a few extra NOP instructions without affecting the shellcode's execution. In this case, you want to be sure that the jump performed lands on the `push eax` instruction, or if you include an NOP sled, it should fall within that region!
+
+```
+|                    |<-- High Address
+|\xe9\x70\xff\xff\xff|
+|--------------------|<--ESP
+|Addr of jmp esp     | 
+|--------------------|
+| AA                 |
+|--------------------|
+| CUSTOM_SHELL       |
+| (126B)             |
+|--------------------|
+| \x50\x5c           |
+| '\x90' * 5         |
+| GTER /.:/          |
+|--------------------|<-- Low Address
+```
+
 11) Run the program once more.
 	* Now we can see the shell has been created!
 
