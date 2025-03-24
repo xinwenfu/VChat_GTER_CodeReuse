@@ -446,7 +446,7 @@ push ebx                ; lpApplicationName
 
 mov ebx,0x7594f960      ; Change! Call CreateProcessA()
 call ebx                ; Call CreateProcessA()
-<\pre>
+</pre>
 1) We first allocate a `lpCommandLine` string on the stack.
    ```
    mov ebx,0x646d6341      ; Move 'cmda' to EBX. The trailing 'a' is to avoid
