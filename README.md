@@ -55,7 +55,7 @@ Compile VChat and its dependencies if they have not already been compiled. This 
 The following sections cover the process that should (or may) be followed when performing this exploitation on the VChat application. It should be noted that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumptions, such as having access to the application binary that may not be realistic in cases where you are exploiting remote servers; however, the enumeration and exploitation of generic Windows, and Linux servers to get the binary from a remote server falls outside of the scope of this document.
 
 > [!IMPORTANT]
-> The offsets and addresses shown in the following screenshots may differ from those used in the python and ruby code in this repository. This is because the offsets change slightly between the Windows 10 version of VChat compiled with GCC and the Windows 11 version compiled with the Visual Studio compiler.
+> The offsets and addresses shown in the following screenshots may differ from those used in the python and ruby code in this repository. This is because the offsets change slightly between the Windows version of VChat compiled with GCC and the Windows 11 version compiled with the Visual Studio compiler.
 ### Information Collecting
 We want to understand the VChat program and how it works in order to exploit it effectively. Before diving into the specifics of how VChat behaves, the most important information for us is the IP address of the Windows VM that runs VChat and the port number that VChat runs on.
 
@@ -556,7 +556,7 @@ This section will show you how we can get the address of a function using [arwin
 Now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
 
 1) Edit the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
-	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses in your victim Windows 10 machine.
+	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses in your victim Windows machine.
 	- Adjust the IP address to the attacker's local machine.
 
 2) Compile the shellcode with nasm.
