@@ -622,6 +622,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 		<img src="Images/I16.png" width=640>
 
+**Illustration of the stack before shellcode runs**
 ```
 |                      |<-- High Address 
 |                      |
