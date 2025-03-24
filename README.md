@@ -289,7 +289,7 @@ call ebx                ; Call connect()
    ```
 5) We then call the `connect(...)` function.
    ```
-   mov ebx,0x771e6980      ; <b>Change</b>! Address of connect()
+   mov ebx,0x771e6980      ; Change! Address of connect()
    call ebx                ; Call connect()
    ```
    * The address of the `connect(...)` function is found with [arwin](https://github.com/xinwenfu/arwin)
