@@ -618,7 +618,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 		<img src="Images/I15.png" width=640>
 
-	* Running the exploit with the breakpoint set, we can see that the EAX register holds the address of the buffer, if we place the stack pointer `eip` at this location it will no longer interfere with the shellcode.
+	* Running the exploit with the breakpoint set, we can see that the EAX register holds the address of the buffer, if we place the stack pointer `ESP` at this location it will no longer interfere with the shellcode.
 
 		<img src="Images/I16.png" width=640>
 
