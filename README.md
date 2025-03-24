@@ -562,7 +562,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 2) Compile the shellcode with nasm.
 	1) Ensure nasm is installed, if not you will need to [install it](https://nasm.us/) and add it to the path.
 
-		<img src="Images/I8.png" width=800>
+		<img src="Images/I8.png" width=640>
 
 	2) Run nasm on the target assembly, Run: `nasm -f elf32 -o shellcode.o shellcode.asm `
 		* `nasm`: Netwide Assembler, assembles assembly into x86 machine code.
@@ -570,7 +570,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 		* `-o shellcode.o`: Shellcode File.
 		* `shellcode.asm`: Input file.
 
-		<img src="Images/I9.png" width=800>
+		<img src="Images/I9.png" width=640>
 
 3) Now we can extract the binary with a simple [shell script](./SourceCode/extract.sh).
 	```sh
