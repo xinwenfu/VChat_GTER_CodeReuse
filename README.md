@@ -627,7 +627,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 |                      |<-- High Address 
 |                      |
 | \xe9\x70\xff\xff\xff |
-|----------------------|<--ESP
+|----------------------|<-- ESP
 | Addr of jmp esp      | 
 |----------------------|
 | AA                   |
