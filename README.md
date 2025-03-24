@@ -112,7 +112,7 @@ int WSAStartup(
 * ```lpWSAData```: Pointer to the [WSADATA](https://learn.microsoft.com/en-us/windows/win32/api/winsock/ns-winsock-wsadata) structure which contains information used when loading the Windows Socket module.
 
 
-Luckily for us, since we are exploiting a Vulnerable By Design (VBD) server it has most likely already called the `WSAStartup(...)` function and loaded the Windows Socket module into memory. This allows us to reduce the size of the shellcode to some degree.
+Luckily for us, since we are exploiting a Vulnerable By Design (VBD) server it has most likely already called the `WSAStartup(...)` function and loaded the Windows Socket module into memory. This allows us to reduce the size of the shellcode to some degree. **We don't need to find the address of WSAStartup**.
 
 #### WSASocketA
 Although the Windows [socket(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket) and [WSASocketA(...)](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa) functions will functionally perform the same tasks, their arguments and style of use are slightly different. The `socket(...)` function models the traditional Unix style of sockets, whereas the `WSASocketA(...)` is Microsoft's implementation of the socket interface. In this case, we will use the `WSASocketA(...)` function call.
