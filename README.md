@@ -525,7 +525,7 @@ This section will show you how we can get the address of a function using [arwin
 
 3) Check if [arwin](https://github.com/xinwenfu/arwin) is installed.
 
-	<img src="Images/I3.png" width=800>
+	<img src="Images/I3.png" width=640>
 
 	* If this is not installed you will need to download arwin, and add it to your path (Or simply run it from the downloaded folder).
 
