@@ -289,8 +289,8 @@ call ebx                ; Call connect()
    ```
 5) We then call the `connect(...)` function.
    ```
-mov ebx,0x771e6980      ; <b>Change</b>! Address of connect()
-call ebx                ; Call connect()
+   mov ebx,0x771e6980      ; <b>Change</b>! Address of connect()
+   call ebx                ; Call connect()
    ```
    * The address of the `connect(...)` function is found with [arwin](https://github.com/xinwenfu/arwin)
    * We will return to the stack, and we do not need to save the return value (It will return if it fails or not).
