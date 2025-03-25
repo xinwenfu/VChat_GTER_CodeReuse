@@ -12,6 +12,8 @@ As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter
 ## VChat Setup and Configuration
 This section covers the compilation process, and use of the VChat Server. We include instructions for both the original VChat code which was compiled with MinGW and GCC on Windows, and the newly modified code that can be compiled with the Visual Studio C++ compiler.
 
+Find the executables of the vulnerable chat server [here](https://github.com/xinwenfu/vchat/tree/main/Server).
+
 ### Visual Studio
 <details>
 	
