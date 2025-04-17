@@ -561,7 +561,7 @@ This section will show you how we can get the address of a function using [arwin
 Now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
 
 1) **Step 1**. Edit the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
-	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses in your victim Windows machine.
+	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses obtained through [arwin](#arwin) in your victim Windows machine.
 	- Adjust the IP address to the attacker's local machine.
 
 2) **Step 2**. Compile the shellcode with nasm.
