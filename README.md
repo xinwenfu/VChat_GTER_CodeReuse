@@ -644,7 +644,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 | \x50\x5c             |
 | \x90\x90\x90\x90\x90 |
 | GTER /.:/            | \/
-|----------------------|----
+|----------------------|---- <- eax
 |                      |<-- Low Address
 ```
 
