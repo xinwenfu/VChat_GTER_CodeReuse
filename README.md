@@ -569,7 +569,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 		<img src="Images/I8.png" width=640>
 
-	2) Run nasm on the target assembly, Run: `nasm -f elf32 -o shellcode.o shellcode.asm `
+	2) Run nasm on the target assembly, Run: **nasm -f elf32 -o shellcode.o shellcode.asm**
 		* `nasm`: Netwide Assembler, assembles assembly into x86 machine code.
 		* `-f elf32`: elf32 format.
 		* `-o shellcode.o`: Shellcode File.
