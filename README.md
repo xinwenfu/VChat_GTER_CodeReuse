@@ -594,7 +594,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 	<img src="Images/I10.png" width=640>
 
-4) **Step 3**. Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
+4) Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
 
 6) **Step 4**. Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
@@ -656,10 +656,12 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 	<img src="Images/I17.png" width=640>
 
-10) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
+12) **Step 3**. Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise. That is we could execute a few extra NOP instructions without affecting the shellcode's execution. In this case, you want to be sure that the jump performed lands on the `push eax` instruction, or if you include an NOP sled, it should fall within that region!
 
-11) **Step 5**. Run the program once more.
+13) **Step 4**. Start netcat listening on port 4444, Run: `nc -lvp 4444`
+
+14) **Step 5**. Run the program once more.
 	* Now we can see the shell has been created!
 
 	<img src="Images/I18.png" width=640>
