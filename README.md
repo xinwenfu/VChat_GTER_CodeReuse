@@ -591,7 +591,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 		* `cut -f2`: Extract the second field; this contains the hex representation of the instructions.
 	* ` do echo -n '\x'$i; done`: Echo the hex extracted in the format `\x<HexValue>`.
 	* `echo`: Print an extra line.
-	* **Note**: If you create this file, be sure to make it executable with  the command `chmod +x extract.sh`, then you can run it using the command `./extract.sh`.
+	* **Note**: If you create this file, be sure to make it executable with  the command `chmod +x extract.sh`, then you can run it using the command **./extract.sh**.
 
 	<img src="Images/I10.png" width=640>
 
