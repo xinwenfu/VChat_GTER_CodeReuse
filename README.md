@@ -534,21 +534,21 @@ This section will show you how we can get the address of a function using [arwin
 
 	* If this is not installed you will need to download arwin, and add it to your path (Or simply run it from the downloaded folder).
 
-4)  Find the `WSASockA(...)` Function: Run `arwin ws2_32 WSASocketA`, example output is shown below.
+4)  Find the `WSASockA(...)` Function: Run **arwin ws2_32 WSASocketA**, example output is shown below.
 	* `arwin`: The arwin binary.
 	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
 	* `WSASocketA`: Look for the WSASocketA function.
 
 	<img src="Images/I4.png" width=640>
 
-5) Find the `connect(...)` Function: Run `arwin ws2_32 connect`, example output is shown below.
+5) Find the `connect(...)` Function: Run **arwin ws2_32 connect**, example output is shown below.
 	* `arwin`: The arwin binary.
 	* `ws2_32`: Look for Windows socket 2, 32-bit related functions.
 	* `connect`: Look for the connect function.
 
 	<img src="Images/I5.png" width=640>
 
-6) Find the `CreateProcessA` Function: Run `arwin kernel32 CreateProcessA`, example output is shown below:
+6) Find the `CreateProcessA` Function: Run **arwin kernel32 CreateProcessA**, example output is shown below:
 	* `arwin`: The arwin binary.
 	* `kernel32`: Look for kernel module, specifically 32-bit related functions.
 	* `CreateProcessA`: Look for the CreateProcessA function.
@@ -560,11 +560,11 @@ This section will show you how we can get the address of a function using [arwin
 ### Exploitation
 Now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
 
-1) Edit the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
+1) **Step 1**. Edit the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
 	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses in your victim Windows machine.
 	- Adjust the IP address to the attacker's local machine.
 
-2) Compile the shellcode with nasm.
+2) **Step 2**. Compile the shellcode with nasm.
 	1) Ensure nasm is installed, if not you will need to [install it](https://nasm.us/) and add it to the path.
 
 		<img src="Images/I8.png" width=640>
@@ -595,8 +595,9 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 	<img src="Images/I10.png" width=640>
 
-4) Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
-5) Start netcat listening on port 4444, Run: `nc -lvp 4444`
+4) **Step 3**. Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
+
+6) **Step 4**. Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
 	* `l`: Listen.
 	* `v`: Verbose output.
@@ -604,17 +605,17 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 	<img src="Images/I11.png" width=640>
 
-6) Ensure that VChat is launched and attached to *Immunity Debugger*.
+7) Ensure that VChat is launched and attached to *Immunity Debugger*.
 
 	<img src="Images/I12.png" width=640>
 
-7) Run the exploit against VChat and observe the output.
+8) Run the exploit against VChat and observe the output.
 
 	<img src="Images/I13.png" width=640>
 
 	* Notice that we did not get a shell; this means something likely went wrong...
 
-8) We can set a breakpoint at our jump esp command.
+9) We can set a breakpoint at our jump esp command.
 	* We can see the shellcode is being executed normally
 
 		<img src="Images/I14.png" width=640>
@@ -659,7 +660,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 10) Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise. That is we could execute a few extra NOP instructions without affecting the shellcode's execution. In this case, you want to be sure that the jump performed lands on the `push eax` instruction, or if you include an NOP sled, it should fall within that region!
 
-11) Run the program once more.
+11) **Step 5**. Run the program once more.
 	* Now we can see the shell has been created!
 
 	<img src="Images/I18.png" width=640>
