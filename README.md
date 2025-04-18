@@ -2,7 +2,7 @@
 > [!NOTE]
 > - The following exploit and its procedures are based on an original [Blog](https://fluidattacks.com/blog/vulnserver-gter-no-egghunter/) from fluid attacks.
 > - Disable Windows *Real-time protection* at *Virus & threat protection* -> *Virus & threat protection settings*.
-> - Don't copy the *$* sign when copying and pasting a command in this tutorial.
+> - Don't copy the *$* sign when cStep 4opying and pasting a command in this tutorial.
 > - Offsets may vary depending on what version of VChat was compiled, the version of the compiler used, and any compiler flags applied during the compilation process.
 ___
 As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter), the GTER buffer has limited space. This means, we have to be creative when performing any kind of buffer overflow to gain remote code execution (often leading to a shell) with the GTER command. This exploit focuses on the reuse of code that is already present and loaded on the target machine. We will write shellcode (assembly) to execute useful gadgets of Windows C Standard Library code that has already been loaded in memory in order to allocate a new Windows shell and create a remote connection to the attacker's machine, turning this into a reverse shell that allows for arbitrary remote code execution. We do this to limit the total amount of space required to generate a shell since our custom shellcode will not have to locate or load any additional libraries.
@@ -596,7 +596,7 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 4) Now we can copy this shellcode into our exploit; see [exploit0.py](./SourceCode/exploit1.py) for guidance. We have already discovered how to jump back to the start of our buffer in the [original GTER exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter). So, we need to perform a simple modification where we instead fill the start with our new shellcode.
 
-6) **Step 4**. Start netcat listening on port 4444, Run: `nc -lvp 4444`
+6) Start netcat listening on port 4444, Run: `nc -lvp 4444`
 	* `nc`: netcat command.
 	* `l`: Listen.
 	* `v`: Verbose output.
