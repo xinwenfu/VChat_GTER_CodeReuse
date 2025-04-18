@@ -13,7 +13,7 @@ As with the [previous exploit](https://github.com/DaintyJet/VChat_GTER_EggHunter
 ## Vieo Demo
 [![Video demo](https://img.youtube.com/vi/Fvd2kKNFn-k/mqdefault.jpg)](https://youtu.be/Fvd2kKNFn-k)
 	
-## VChat Setup and Configuration
+## Step 1. VChat Setup and Configuration
 This section covers the compilation process, and use of the VChat Server. We include instructions for both the original VChat code which was compiled with MinGW and GCC on Windows, and the newly modified code that can be compiled with the Visual Studio C++ compiler.
 
 Find the executables of the vulnerable chat server [here](https://github.com/xinwenfu/vchat/tree/main/Server).
@@ -560,11 +560,11 @@ This section will show you how we can get the address of a function using [arwin
 ### Exploitation
 Now that we have generated the assembly for our shellcode, we will generate the binary instructions that will be injected onto the stack as *shellcode* in order to allow remote execution.
 
-1) **Step 1**. Edit the assembly located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
+1) **Step 2**. **Edit the assembly shellcode** located in the [shellcode.asm](./SourceCode/shellcode.asm) file.
 	- Adjust the address of WSASocketA, connect, and CreatProcessA to the addresses obtained through [arwin](#arwin) in your victim Windows machine.
 	- Adjust the IP address to the attacker's local machine.
 
-2) **Step 2**. Compile the shellcode with nasm.
+2) **Step 3**. **Compile the shellcode** with nasm.
 	1) Ensure nasm is installed, if not you will need to [install it](https://nasm.us/) and add it to the path.
 
 		<img src="Images/I8.png" width=640>
@@ -656,12 +656,12 @@ Now that we have generated the assembly for our shellcode, we will generate the 
 
 	<img src="Images/I17.png" width=640>
 
-12) **Step 3**. Modify the shellcode as shown in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
+12) **Step 4**. **Modify the exploit code** in [exploit2.py](./SourceCode/exploit2.py). Notice that we added the hex for the push and pop instructions to move the stack pointer out of the way, and we decreased the number of `A's by two, as each of the two instruction we added is one byte.
 	* *Note*: From the previous exploits it was possible to have the jump be a little imprecise. That is we could execute a few extra NOP instructions without affecting the shellcode's execution. In this case, you want to be sure that the jump performed lands on the `push eax` instruction, or if you include an NOP sled, it should fall within that region!
 
-13) **Step 4**. Start netcat listening on port 4444, Run: `nc -lvp 4444`
+13) **Step 5**. **Start netcat** listening on port 4444, Run: `nc -lvp 4444`
 
-14) **Step 5**. Run the program once more.
+14) **Step 6**. **Run the exploit code exploit2.py**.
 	* Now we can see the shell has been created!
 
 	<img src="Images/I18.png" width=640>
