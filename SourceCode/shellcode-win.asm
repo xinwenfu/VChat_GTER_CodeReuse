@@ -1,5 +1,5 @@
-; nasm.exe -f win32 shellcode.asm -o shellcode.obj
-; GoLink.exe /console /entry _start shellcode.obj
+; nasm.exe -f win32 shellcode-win.asm -o shellcode-win.obj
+; GoLink.exe /console /entry _start shellcode-win.obj
 
 [BITS 32]
 
