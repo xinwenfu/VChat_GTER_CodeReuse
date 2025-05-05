@@ -1,3 +1,5 @@
+; nasm -f elf32 -o shellcode.o shellcode.asm
+
 ; WSASocketA()
 xor ebx,ebx             ; Zero out EBX
 push ebx                ; Push 'dwFlags' parameter
